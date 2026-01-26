@@ -1,0 +1,54 @@
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- LaTeX ---
+# Core build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Bibliography and indices
+*.bbl
+*.blg
+*.idx
+*.ind
+*.ilg
+*.lof
+*.lot
+*.bcf
+
+# Beamer presentation clutter
+*.nav
+*.snm
+*.vrb
+
+# TeX Editors (TexShop, Texpad, etc.)
+*.synctex(busy)
+*.pdfsync
+*.run.xml
+
+# --- Jupyter Notebooks & Python ---
+# Checkpoints are the bane of clean diffs
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Python bytecode and environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# --- Editors (VS Code, JetBrains) ---
+.vscode/
+.idea/
+
+*.ipynb_checkpoints

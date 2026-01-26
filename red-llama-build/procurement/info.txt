@@ -1,0 +1,11 @@
+Star Ground v2.1.2
+By: Jackson Ferguson
+Generated on: 2026-01-24 00:58
+
+CONTENTS:
+- Field Manuals/: Printable step-by-step checklists.
+- Sticker Sheets/: Labels for Avery 5160 (3x10).
+- Source Documents/: The original build docs (if available).
+
+Github Page:
+https://github.com/JacksonFergusonDev/star-ground
