@@ -2,16 +2,12 @@
 
 % --- PACKAGES ---
 \usepackage[a4paper, margin=2.5cm]{geometry}
-\usepackage{libertinus}
 \usepackage{microtype}
 \usepackage{graphicx}
-\usepackage{xcolor}
-\usepackage{hyperref}
 \usepackage{titlesec}
 \usepackage{tocloft}
 \usepackage{booktabs}
 \usepackage{enumitem}
-\usepackage{fontspec}
 \usepackage{listings}
 \usepackage{fancyhdr}
 \usepackage{amsmath}
@@ -19,22 +15,32 @@
 \usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
 \addbibresource{references.bib}
 
+% FONTS (LuaLaTeX): fontspec + unicode-math (Libertinus family)
+\usepackage{fontspec}
+
+% Emoji fallback (LuaLaTeX + luaotfload)
 \directlua{
   luaotfload.add_fallback("monofontemoji", {
       "Apple Color Emoji:mode=harf;"
   })
 }
 
-\setmonofont{Libertinus Mono}[RawFeature={fallback=monofontemoji}]
+% Text fonts
+\setmainfont{Libertinus Serif}[RawFeature={fallback=monofontemoji}]
+\setsansfont{Libertinus Sans}[Scale=MatchLowercase,RawFeature={fallback=monofontemoji}]
+\setmonofont{Libertinus Mono}[Scale=MatchLowercase,RawFeature={fallback=monofontemoji}]
+
+% Math fonts (OpenType/Unicode math)
+\usepackage{unicode-math}
+\setmathfont{Libertinus Math}
 
 % --- HYPERLINKS STYLING ---
-\usepackage{hyperref}
+\usepackage[pdfusetitle]{hyperref}
 \hypersetup{
   colorlinks=false,
   linkcolor=blue,
   citecolor=blue,
   urlcolor=cyan,
-  pdfusetitle
 }
 \urlstyle{same}
 
@@ -79,7 +85,7 @@
 % --- HEADER/FOOTER ---
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{\textbf{System Monograph}}
+\rhead{\textbf{Technical Report}}
 \lhead{Jackson Ferguson}
 \cfoot{\thepage}
 
@@ -100,7 +106,7 @@
   {\Huge \textbf{From Python to Silicon}}
 
   \vspace{0.5cm}
-  {\Large A Systems Engineering Monograph on \\ Logistics, Power, Analog Synthesis, and Signal Analysis}
+  {\Large A Technical Report on \\ Logistics, Power, Analog Synthesis, and Signal Analysis}
 
   \vspace{1.5cm}
 
@@ -125,7 +131,7 @@
 \begin{abstract}
   \noindent This document records a recursive engineering journey: the design and fabrication of the tools required to build a specific device. Identifying a gap between software architecture proficiency and physical implementation, I undertook a project to build an analog guitar pedal (The Red Llama). However, the standard hobbyist workflow proved insufficient for rigorous engineering.
 
-  This monograph details the development of four interdependent systems: (1) \href{https://github.com/JacksonFergusonDev/star-ground}{\textbf{Star Ground}}, a deterministic Python logistics engine for BOM management; (2) A thermal-managed \textbf{Linear Power Supply}; (3) The \textbf{Red Llama} analog overdrive circuit; and (4) A custom \textbf{RP2040 Data Acquisition System} (DAQ) used to spectrally validate the final build.
+  This technical report details the development of four interdependent systems: (1) \href{https://github.com/JacksonFergusonDev/star-ground}{\textbf{Star Ground}}, a deterministic Python logistics engine for BOM management; (2) A thermal-managed \textbf{Linear Power Supply}; (3) The \textbf{Red Llama} analog overdrive circuit; and (4) A custom \textbf{RP2040 Data Acquisition System} (DAQ) used to spectrally validate the final build.
 \end{abstract}
 
 \tableofcontents
@@ -145,7 +151,7 @@
 \section{The Systems Engineering Imperative}
 In modern computational astrophysics, complex systems are modeled with high precision, yet they remain fundamentally virtual. As an undergraduate specializing in data pipelines and Python, I operate within deterministic environments where logic is absolute and variables are strictly controlled. However, the transition from software architecture to physical implementation reveals a critical discontinuity—the ``Full-Stack Gap.''
 
-In the physical domain, engineering is not merely about logic; it is about managing entropy. Physical systems are subject to stochastic variables—component tolerances, thermal drift, supply chain volatility, and electromagnetic interference—that do not exist in code. This monograph documents a recursive engineering initiative designed to bridge this gap. The primary objective was to fabricate a specific analog device (The Red Llama Overdrive), but the broader pedagogical goal was to apply the rigor of software systems engineering—modularity, regression testing, and version control—to the chaotic reality of hardware fabrication.
+In the physical domain, engineering is not merely about logic; it is about managing entropy. Physical systems are subject to stochastic variables—component tolerances, thermal drift, supply chain volatility, and electromagnetic interference—that do not exist in code. This technical report documents a recursive engineering initiative designed to bridge this gap. The primary objective was to fabricate a specific analog device (The Red Llama Overdrive), but the broader pedagogical goal was to apply the rigor of software systems engineering—modularity, regression testing, and version control—to the chaotic reality of hardware fabrication.
 
 \section{Problem Formulation}
 The standard hobbyist workflow for electronics fabrication is often characterized by ad-hoc solutions and subjective validation. When analyzed through a systems engineering lens, this approach reveals three critical failure modes that compromise reproducibility and rigorous analysis:
@@ -173,7 +179,7 @@ This document details the design, fabrication, and integration of four interdepe
   \item \textbf{RP2040 DAQ (Instrumentation):} A custom spectrophotometer and high-speed Analog Front End (AFE). Calibrated against the 60Hz mains frequency, this system enables the empirical verification of the DUT's harmonic content, moving validation from the subjective to the quantitative.
 \end{itemize}
 
-\section{Monograph Structure}
+\section{Report Structure}
 The remainder of this document is organized logically following the signal path of the engineering process:
 \begin{itemize}
   \item \textbf{Chapter 2} details the software architecture used to manage physical chaos.
@@ -476,7 +482,7 @@ The board functionality is determined by the presence of socketed components and
 \end{table}
 
 \section{Firmware Logic}
-The firmware is written in MicroPython to leverage rapid development, but standard Python is too slow for high-speed sampling. To maximize throughput, the critical capture loop uses the \texttt{@micropython.native} decorator.\cite{micropython_speed_python}
+The firmware is written in MicroPython to leverage rapid development, but standard Python is too slow for high-speed sampling. To maximize throughput, the critical capture loop uses the \lstinline|@micropython.native| decorator.\cite{micropython_speed_python}
 
 \begin{lstlisting}[caption=Native Emitter Capture Loop]
 @micropython.native
@@ -631,9 +637,9 @@ The clear resolution of these harmonic peaks ($\approx 5.9\,\text{Hz/bin}$) vali
 \chapter{Conclusion}
 
 \section{Synthesis: The Recursive Engineering Loop}
-This monograph documented a deviation from standard hobbyist electronics toward a rigorous systems engineering approach. The project verified that the "Full-Stack Gap" described in Chapter 1 can be bridged not by purchasing better tools, but by engineering them.
+This technical report documented a deviation from standard hobbyist electronics toward a rigorous systems engineering approach. The project verified that the "Full-Stack Gap" described in Chapter 1 can be bridged not by purchasing better tools, but by engineering them.
 
-The development of the four interdependent systems---Logistics, Infrastructure, Device, and Instrumentation---demonstrated that the principles of software architecture (modularity, determinism, and regression testing)\cite{pytestregtest,pytest} are directly transferable to physical fabrication. The success of the \textbf{Red Llama} build was not a result of manual dexterity, but of the logistical determinism provided by \textbf{Star Ground} and the electrical stability provided by the \textbf{Linear Power Regulator}.
+The development of the four interdependent systems\textemdash Logistics, Infrastructure, Device, and Instrumentation\textemdash demonstrated that the principles of software architecture (modularity, determinism, and regression testing)\cite{pytestregtest,pytest} are directly transferable to physical fabrication. The success of the \textbf{Red Llama} build was not a result of manual dexterity, but of the logistical determinism provided by \textbf{Star Ground} and the electrical stability provided by the \textbf{Linear Power Regulator}.
 
 \section{Summary of Empirical Findings}
 The analytical phase (Chapter 6) provided quantitative validation of the system's performance. The data supports the following conclusions regarding the \textbf{Red Llama} topology and the custom \textbf{RP2040 DAQ}:
@@ -670,7 +676,7 @@ A custom "Host-to-Device" interface is under development, utilizing the host lap
   \item \textbf{Software Generation:} A Python-based Direct Digital Synthesis (DDS) engine has been written to generate precise sine sweeps (20Hz--20kHz) and step functions.
 \end{itemize}
 
-This upgrade will allow for the automation of Bode plotting and Total Harmonic Distortion (THD) sweeping in the next revision of this monograph.
+This upgrade will allow for the automation of Bode plotting and Total Harmonic Distortion (THD) sweeping in the next revision of this technical report.
 
 \section{Final Remarks}
 The \textbf{Red Llama} project stands as a proof-of-concept for the "Systems" approach to maker-electronics. By refusing to treat the supply chain, power delivery, and validation as externalities, the project yielded a device with a verified noise floor and a mathematically characterized distortion profile. This journey confirms that for the modern engineer, the distinction between code and silicon is increasingly arbitrary; both are simply distinct layers of the same stack.

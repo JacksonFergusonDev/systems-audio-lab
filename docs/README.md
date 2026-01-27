@@ -1,8 +1,8 @@
-# System Monograph: From Python to Silicon
+# Technical Report: From Python to Silicon
 
-**[📄 Read the Full Engineering Report (PDF)](./design_journal.pdf)**
+**[📄 Read the Full Engineering Report (PDF)](./systems_audio_tech_report.pdf)**
 
-This directory contains the formal technical documentation for the **Universal RP2040 Analog Interface** and its associated subsystems. It serves as a comprehensive "Systems Engineering Monograph," detailing the recursive journey of building the software to buy the parts, building the power supply to run the device, and building the instrumentation to validate it.
+This directory contains the formal technical documentation for the **Universal RP2040 Analog Interface** and its associated subsystems. It serves as a comprehensive Systems Engineering Technical Report, detailing the recursive journey of building the software to buy the parts, building the power supply to run the device, and building the instrumentation to validate it.
 
 ---
 
@@ -47,6 +47,6 @@ The project has transitioned from passive capture to **Active Signal Injection**
 
 ## 4. Artifacts
 
-* **`design_journal.tex`**: The LaTeX source code for the monograph.
+* **`systems_audio_tech_report.tex`**: The LaTeX source code for the technical report.
 * **`figures/`**: Generated matplotlib exports from the analysis pipeline.
-* **`design_journal.pdf`**: The compiled documentation.
+* **`systems_audio_tech_report.pdf`**: The compiled documentation.
