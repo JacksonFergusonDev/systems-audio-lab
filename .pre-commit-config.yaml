@@ -1,0 +1,21 @@
+repos:
+  # 1. Generic hooks (configured to IGNORE Python)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.(py|ipynb)$
+      - id: end-of-file-fixer
+        exclude: \.(py|ipynb)$
+      - id: check-yaml
+        exclude: \.ipynb$
+      - id: check-added-large-files
+        exclude: \.ipynb$
+
+  # 2. Python-specific toolchain
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.14
+    hooks:
+      - id: ruff-format
+      - id: ruff
+        args: [ --fix ]
