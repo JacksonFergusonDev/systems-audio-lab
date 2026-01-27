@@ -23,7 +23,7 @@ In **Phase 2**, the system was expanded to include a host-side **Function Genera
 ## 📂 Repository Architecture
 
 ### [`schematics/`](./schematics/)
-The physical layer. Contains the KiCad schematics and fabrication exports for the Universal AFE.
+The physical layer. Contains the schematics and fabrication exports for the Universal AFE.
 * **Topology:** Switched Reference with selectable attenuation (Line Level vs. High-Z/Guitar).
 * **Protection:** Dual-stage clamping ($R_{prot}$ + 1N4148 diodes) prevents RP2040 latch-up.
 
