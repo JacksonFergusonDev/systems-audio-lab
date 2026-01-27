@@ -12,7 +12,7 @@ A complete electronics workbench built from scratch to measure and analyze audio
 
 This repository documents the full process from component ordering through frequency response analysis, spanning software logistics, power regulation, embedded firmware, and signal processing.
 
-### 📄 [Read the Full Engineering Report (PDF)](docs/design_journal.pdf)
+### 📄 [Read the Full Engineering Report (PDF)](docs/systems_audio_tech_report.pdf)
 *A detailed technical report covering the design process, thermal analysis, and measurement validation.*
 
 ---
