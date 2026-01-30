@@ -40,3 +40,10 @@ jobs:
 
     - name: Run Tests
       run: uv run pytest
+
+    - name: Run Notebook Regression Tests
+      run: |
+        uv run pytest --nbmake \
+        oscilloscope-rp2040/notebooks/02_instrument_analysis.ipynb \
+        oscilloscope-rp2040/notebooks/04_transfer_analysis.ipynb \
+        --nbmake-timeout=600
