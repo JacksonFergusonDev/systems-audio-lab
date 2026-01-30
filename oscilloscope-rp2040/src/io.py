@@ -1,3 +1,4 @@
+import glob
 import os
 import sys
 from datetime import datetime
@@ -130,3 +131,15 @@ def scan_metadata(directory: str) -> pd.DataFrame:
             except Exception as e:
                 print(f"Error reading {filename}: {e}")
     return pd.DataFrame(records)
+
+
+def load_latest_file(directory: str, pattern: str = "*.npz"):
+    """Finds and loads the most recent file matching a pattern."""
+    search_path = os.path.join(directory, pattern)
+    files = glob.glob(search_path)
+    if not files:
+        return None, None
+
+    latest_file = max(files, key=os.path.getmtime)
+    print(f"📂 Loading: {os.path.basename(latest_file)}")
+    return load_signal(latest_file)
