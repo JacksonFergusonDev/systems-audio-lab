@@ -4,7 +4,7 @@ import seaborn as sns
 import numpy as np
 from pathlib import Path
 from typing import Optional, Union, Any
-from . import dsp, metrics
+from . import dsp, metrics, config
 
 # --- Style Configuration ---
 COLORS = {
@@ -406,3 +406,22 @@ def plot_final_report(
         save_pdf_svg(fig, savepath, bbox_inches="tight")
     if show:
         plt.show()
+
+
+def plot_health_check(voltages: np.ndarray, fs: float, title: str, is_healthy: bool):
+    """Standard verification plot."""
+    plt.figure(figsize=(12, 4))
+    plt.plot(voltages, color="lime" if is_healthy else "orange", lw=0.7)
+
+    # Safety Rails
+    plt.axhline(config.V_REF, color="red", linestyle="--", alpha=0.5)
+    plt.axhline(0.0, color="red", linestyle="--", alpha=0.5)
+    plt.axhline(config.V_MID, color="cyan", linestyle=":", alpha=0.5, label="V_mid")
+
+    plt.title(f"{title} (FS={fs:.0f}Hz)")
+    plt.ylabel("Voltage (V)")
+    plt.xlabel("Samples")
+    plt.ylim(-0.1, config.V_REF + 0.1)
+    plt.grid(True, alpha=0.3)
+    plt.legend(loc="upper right")
+    plt.show()
