@@ -101,3 +101,36 @@ def run_live_scope(
     finally:
         plt.close(fig)
         print("Scope Closed.")
+
+
+def analyze_signal_plot(signal: np.ndarray, fs: float, title: str = "Signal Analysis"):
+    """
+    Static analysis plot for a captured signal file.
+    Shows Time Domain and Frequency Spectrum.
+    """
+    # Prep analysis
+    ac_signal = dsp.remove_dc(signal)
+    freqs, mags = dsp.compute_spectrum(ac_signal, fs)
+    fundamental = dsp.estimate_fundamental(freqs, mags)
+
+    # Plotting
+    t_axis = (np.arange(signal.size) / fs) * 1000
+
+    plt.figure(figsize=(12, 8))
+
+    plt.subplot(2, 1, 1)
+    plt.plot(t_axis, signal, color="lime")
+    plt.title(f"{title} | Pitch: {fundamental:.1f} Hz")
+    plt.grid(True, alpha=0.3)
+    plt.ylabel("Voltage (V)")
+    plt.xlabel("Time (ms)")
+
+    plt.subplot(2, 1, 2)
+    plt.plot(freqs, mags, color="orange")
+    plt.xlim(0, 2000)
+    plt.grid(True, alpha=0.3)
+    plt.ylabel("Magnitude")
+    plt.xlabel("Frequency (Hz)")
+
+    plt.tight_layout()
+    plt.show()
