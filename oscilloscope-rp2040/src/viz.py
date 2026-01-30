@@ -105,6 +105,84 @@ def run_live_scope(
         print("Scope Closed.")
 
 
+def run_playback_scope(
+    data: np.ndarray,
+    fs: float,
+    samples_per_frame: int = config.LIVE_SAMPLES,
+    title: str = "Playback",
+):
+    """
+    Runs a scope visualization from a recorded array.
+    Moved from scripts/visualization/playback_scope.py.
+    """
+    total_samples = data.size
+    duration_sec = total_samples / fs
+    total_frames = total_samples // samples_per_frame
+
+    # Setup Plot
+    fig, ax, line, status_text = init_scope_plot()
+    ax.set_title(title)
+
+    # Handle window close
+    stop_flag = {"value": False}
+
+    def on_close(event):
+        stop_flag["value"] = True
+
+    fig.canvas.mpl_connect("close_event", on_close)
+
+    # Pre-calc background
+    plt.show(block=False)
+    fig.canvas.draw()
+    background = fig.canvas.copy_from_bbox(ax.bbox)
+
+    start_time = time.time()
+
+    try:
+        while not stop_flag["value"]:
+            elapsed = time.time() - start_time
+
+            # Determine frame
+            current_frame_idx = int(elapsed * (fs / samples_per_frame))
+
+            if current_frame_idx >= total_frames:
+                break
+
+            # Extract slice
+            start_idx = current_frame_idx * samples_per_frame
+            end_idx = start_idx + samples_per_frame
+            voltages = data[start_idx:end_idx]
+
+            # Triggering
+            stabilized = dsp.software_trigger(voltages)
+
+            # Update Plot
+            fig.canvas.restore_region(background)
+            line.set_ydata(stabilized)
+            ax.draw_artist(line)
+
+            # Update Text
+            progress = (current_frame_idx / total_frames) * 100
+            status_text.set_text(
+                f"{elapsed:.1f}s / {duration_sec:.1f}s ({progress:.0f}%)"
+            )
+            ax.draw_artist(status_text)
+
+            fig.canvas.blit(ax.bbox)
+            fig.canvas.flush_events()
+
+            # Sync check
+            next_frame_time = (current_frame_idx + 1) * (samples_per_frame / fs)
+            sleep_time = (start_time + next_frame_time) - time.time()
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        plt.close(fig)
+
+
 def analyze_signal_plot(signal: np.ndarray, fs: float, title: str = "Signal Analysis"):
     """
     Static analysis plot for a captured signal file.

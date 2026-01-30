@@ -1,10 +1,15 @@
+import os
 from pathlib import Path
 from typing import Any, Optional, Union
 
+import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from matplotlib.collections import LineCollection
+from matplotlib.colors import to_rgba
+from scipy.interpolate import make_interp_spline
 
 from . import config, dsp, metrics
 
@@ -426,4 +431,256 @@ def plot_health_check(voltages: np.ndarray, fs: float, title: str, is_healthy: b
     plt.ylim(-0.1, config.V_REF + 0.1)
     plt.grid(True, alpha=0.3)
     plt.legend(loc="upper right")
+    plt.show()
+
+
+def _lerp(a, b, t):
+    return a + (b - a) * t
+
+
+def _lerp_rgba(c0, c1, t):
+    r0, g0, b0, a0 = to_rgba(c0)
+    r1, g1, b1, a1 = to_rgba(c1)
+    return (_lerp(r0, r1, t), _lerp(g0, g1, t), _lerp(b0, b1, t), _lerp(a0, a1, t))
+
+
+def plot_joyplot_stacked(
+    signal,
+    lines=8,
+    decimate=7,
+    x_zoom=35,
+    wave_scale=20,
+    output_file="joyplot.pdf",
+):
+    """
+    Renders a Ridgeline/Joyplot (stacked lines) from the signal.
+    Moved from scripts/visualization/joyplot.py (formerly generate_joyplot).
+    """
+    # 1. Pre-process
+    signal = signal.flatten()
+    signal = signal[::decimate]
+
+    signal = signal.astype(float)
+    smin, smax = np.min(signal), np.max(signal)
+    if smax == smin:
+        print("Error: Signal is constant; cannot normalize.")
+        return
+    signal = (signal - smin) / (smax - smin)
+    signal = signal - 0.5  # center around 0
+
+    # 2. Slice into segments
+    total_samples = len(signal)
+    samples_per_line = total_samples // lines
+    line_spacing = 15
+
+    # Gradient Configuration
+    TOP_COLOR = "#3D3229"
+    BOTTOM_COLOR = "#3D3229"
+    TOP_ALPHA = 1.0
+    BOTTOM_ALPHA = 1.0
+    FILL_COLOR = "#FFFFFF"
+    FILL_FOLLOWS_GRADIENT = False
+
+    # 3. Setup Plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # 4. Render Loop
+    for i in range(lines):
+        start = i * samples_per_line
+        end = start + samples_per_line
+        if end > total_samples:
+            break
+
+        segment = signal[start:end]
+        x = np.arange(len(segment))
+
+        y_base = (lines - i) * line_spacing
+        y_curve = (segment * wave_scale) + y_base
+
+        if lines <= 1:
+            t = 0.0
+        else:
+            t = i / (lines - 1)
+
+        alpha = _lerp(TOP_ALPHA, BOTTOM_ALPHA, t)
+        stroke_rgb = _lerp_rgba(TOP_COLOR, BOTTOM_COLOR, t)
+        stroke_color = (stroke_rgb[0], stroke_rgb[1], stroke_rgb[2], 1.0)
+
+        if FILL_FOLLOWS_GRADIENT:
+            fill_rgb = _lerp_rgba(TOP_COLOR, BOTTOM_COLOR, t)
+            fill_color = (fill_rgb[0], fill_rgb[1], fill_rgb[2], 1.0)
+            fill_alpha = alpha
+        else:
+            fill_color = FILL_COLOR
+            fill_alpha = 1.0
+
+        ax.fill_between(
+            x, y_base, y_curve, color=fill_color, zorder=i, alpha=fill_alpha
+        )
+        ax.plot(x, y_curve, color=stroke_color, lw=0.8, zorder=i + 1, alpha=alpha)
+
+    # Horizontal zoom
+    visible = int(samples_per_line / x_zoom)
+    ax.set_xlim(0, max(visible, 2))
+
+    # Minimal styling
+    ax.axis("off")
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    # Save
+    print(f"Rendering vector graphic to {output_file}...")
+    plt.tight_layout()
+    plt.savefig(
+        output_file, format="pdf", transparent=True, bbox_inches=None, pad_inches=0
+    )
+    print("Done.")
+
+
+def plot_phase_portrait(signal, delay, filename_base="phase_portrait"):
+    """
+    Renders a phase portrait (Neon Torus).
+    Moved from scripts/fun/neon_torus.py.
+    """
+    print("🎨 Rendering Phase Portrait...")
+
+    # 1. Create X and Y (Time-Delay Embedding)
+    x = signal[:-delay]
+    y = signal[delay:]
+
+    # 2. Setup the "Neon" aesthetic
+    plt.style.use("dark_background")
+    fig, ax = plt.subplots(figsize=(10, 10))
+
+    # 3. Create a colored line collection (Color by time/index)
+    points = np.array([x, y]).T.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+    # Create a color map based on time (0 to 1)
+    norm = plt.Normalize(0, len(x))
+    lc = LineCollection(segments, cmap="cool", norm=norm, alpha=0.3, linewidth=1.0)
+    lc.set_array(np.arange(len(x)))
+
+    ax.add_collection(lc)
+
+    # 4. Styling
+    ax.set_xlim(-1.1, 1.1)
+    ax.set_ylim(-1.1, 1.1)
+    ax.axis("off")
+
+    # 5. Save Logic
+    save_dir = os.path.abspath(
+        os.path.join(config.PROJECT_ROOT, "..", "docs", "figures")
+    )
+    os.makedirs(save_dir, exist_ok=True)
+
+    pdf_path = os.path.join(save_dir, f"{filename_base}.pdf")
+    plt.savefig(pdf_path, bbox_inches="tight", pad_inches=0, facecolor="black")
+    print(f"✨ Saved vector plots to: {pdf_path}")
+    plt.show()
+
+
+def plot_spectral_landscape(
+    signal,
+    fs,
+    slices=70,
+    overlap=0.14,
+    gamma=0.8,
+    res_factor=10,
+    filename_base="harmonic_landscape",
+):
+    """
+    Renders a 3D spectral landscape.
+    Moved from scripts/fun/render_landscape.py (formerly plot_joyplot).
+    """
+    print(f"🎨 Rendering Landscape (Gamma={gamma})...")
+
+    # Gradient
+    CUSTOM_PALETTE = [
+        "#020202",  # Black
+        "#13010B",  # Deep Purple
+        "#011409",  # Magenta
+        "#005A66",  # Orange
+        "#3D0023",  # Yellow
+    ]
+    BG_COLOR = "none"
+    FILL_COLOR = "white"
+    LINE_WIDTH = 1.2
+    HEIGHT_FACTOR = 0.8
+    STACK_ORDER = "bottom_front"
+
+    total_samples = len(signal)
+    samples_per_slice = total_samples // slices
+
+    # Setup Plot
+    fig, ax = plt.subplots(figsize=(10, 10))
+    fig.patch.set_facecolor(BG_COLOR)
+    ax.set_facecolor(BG_COLOR)
+
+    # Create Custom Colormap
+    cmap = mcolors.LinearSegmentedColormap.from_list(
+        "custom_theme", CUSTOM_PALETTE, N=256
+    )
+
+    # Iterate through slices
+    for i in range(slices):
+        start = i * samples_per_slice
+        end = start + samples_per_slice
+        chunk = signal[start:end]
+
+        # 1. Compute Spectrum
+        freqs, mags = dsp.compute_spectrum(chunk, fs)
+
+        # 2. Crop (0-600Hz)
+        mask = (freqs > 0) & (freqs < 600)
+        f_raw = freqs[mask]
+        m_raw = mags[mask]
+
+        if len(f_raw) < 2:
+            continue
+
+        # 3. Smooth
+        f_smooth = np.linspace(f_raw.min(), f_raw.max(), len(f_raw) * res_factor)
+        spl = make_interp_spline(f_raw, m_raw, k=3)
+        m_smooth = spl(f_smooth)
+        m_smooth = np.maximum(m_smooth, 0)  # Clip negatives
+
+        # --- NORMALIZATION & COMPRESSION ---
+        peak = np.max(m_smooth) if np.max(m_smooth) > 1e-4 else 1.0
+        m_smooth = m_smooth / peak
+        m_smooth = np.power(m_smooth, gamma)
+
+        # 4. Perspective Math
+        y_base = i * overlap
+        y_curve = m_smooth * HEIGHT_FACTOR + y_base
+
+        # 5. Z-Order Logic
+        if STACK_ORDER == "bottom_front":
+            z_base = (slices - i) * 2
+        else:
+            z_base = i * 2
+
+        # 6. Color Logic
+        vol_metric = np.max(np.abs(chunk))
+        vol_metric = max(0.0, min(1.0, vol_metric))
+        color = cmap(vol_metric)
+
+        # Draw
+        ax.fill_between(
+            f_smooth, y_base, y_curve, color=FILL_COLOR, alpha=1.0, zorder=z_base
+        )
+        ax.plot(f_smooth, y_curve, color=color, lw=LINE_WIDTH, zorder=z_base + 1)
+
+    ax.axis("off")
+    ax.set_xlim(0, 600)
+
+    # Save
+    save_dir = os.path.abspath(
+        os.path.join(config.PROJECT_ROOT, "..", "docs", "figures")
+    )
+    os.makedirs(save_dir, exist_ok=True)
+    pdf_path = os.path.join(save_dir, f"{filename_base}.pdf")
+    plt.savefig(pdf_path, bbox_inches="tight", pad_inches=0, transparent=True)
+
+    print(f"✨ Saved to: {os.path.basename(pdf_path)}")
     plt.show()

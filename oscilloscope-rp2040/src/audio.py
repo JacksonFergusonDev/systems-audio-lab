@@ -96,3 +96,19 @@ class ContinuousOscillator:
             self._stream.stop()
             self._stream.close()
         print("🔇 Audio Stopped.")
+
+
+def generate_drone(duration, fs, amp, freq1, freq2):
+    """Generates a sum of two sines (beats)."""
+    t = np.arange(int(duration * fs)) / fs
+    wave = np.sin(2 * np.pi * freq1 * t) + np.sin(2 * np.pi * freq2 * t)
+    wave = (wave / 2) * amp
+    return wave.astype(np.float32)
+
+
+def generate_pulsing_drone(duration, fs, amp, freq, pulse_rate):
+    """Generates a sine wave modulated by a slow sine LFO."""
+    t = np.arange(int(duration * fs)) / fs
+    carrier = np.sin(2 * np.pi * freq * t)
+    modulator = 0.5 * (1 + np.sin(2 * np.pi * pulse_rate * t - np.pi / 2))
+    return (carrier * modulator * amp).astype(np.float32)
