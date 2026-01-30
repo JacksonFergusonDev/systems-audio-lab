@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 # Ensure src is in path for tests
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))

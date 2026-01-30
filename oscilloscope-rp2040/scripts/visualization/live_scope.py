@@ -1,6 +1,7 @@
-import sys
 import os
+import sys
 import time
+
 import matplotlib.pyplot as plt
 
 # Add project root to path

@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 import sounddevice as sd
 
 # Add project root to path

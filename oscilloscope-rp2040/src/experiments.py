@@ -1,7 +1,9 @@
 import time
+
 import numpy as np
 import sounddevice as sd
-from . import audio, daq, io, config, dsp, diagnostics
+
+from . import audio, config, daq, diagnostics, dsp, io, plots
 
 
 def capture_sweep_transfer(
@@ -79,7 +81,7 @@ def capture_steady_transfer(
     """
     print(f"🔹 Starting Oscillator ({shape} @ {freq}Hz)...")
 
-    with audio.ContinuousOscillator(shape, freq, amp) as osc:
+    with audio.ContinuousOscillator(shape, freq, amp) as _:
         time.sleep(duration_buffer)
 
         print("📸 Capturing Burst...")
@@ -121,7 +123,7 @@ def capture_steady_transfer(
 
             # Plot
             title = f"{prefix} (Meas: {dom_freq:.1f}Hz)"
-            diagnostics.plot_health_check(volts, config.FS_DEFAULT, title, is_healthy)
+            plots.plot_health_check(volts, config.FS_DEFAULT, title, is_healthy)
             return path
 
 

@@ -15,7 +15,8 @@ VIDEO_SETTINGS = {
     "dpi": 100,
     "bitrate": 8000,  # kbps
     "crf": 18,  # 0-51 (lower is better quality, 18 is visually lossless)
-    "preset": "slow",  # ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
+    # ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
+    "preset": "slow",
 }
 
 
@@ -34,7 +35,7 @@ def main():
     for key, (name, _) in render.EFFECTS.items():
         print(f"[{key}] {name}")
 
-    effect_choice = input(f"Select Effect [Default: 2]: ").strip()
+    effect_choice = input("Select Effect [Default: 2]: ").strip()
     if not effect_choice:
         effect_choice = "2"
 

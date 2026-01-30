@@ -1,12 +1,13 @@
-import sys
 import os
+import sys
 import time
+
 import numpy as np
 import sounddevice as sd
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import audio, daq, io, config, dsp
+from src import audio, config, daq, dsp, io
 
 # --- USER CONFIGURATION ---
 # Uncomment ONE mode below to select it:
@@ -67,7 +68,7 @@ def run_sweep_capture():
 def run_steady_capture():
     print(f"🔹 Starting Oscillator ({STEADY_SHAPE} @ {STEADY_FREQ}Hz)...")
 
-    with audio.ContinuousOscillator(STEADY_SHAPE, STEADY_FREQ, STEADY_AMP) as osc:
+    with audio.ContinuousOscillator(STEADY_SHAPE, STEADY_FREQ, STEADY_AMP) as _:
         # Allow signal to settle
         time.sleep(0.5)
 

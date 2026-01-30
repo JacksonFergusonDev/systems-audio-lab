@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import schemdraw
 import schemdraw.elements as elm
 
@@ -153,7 +154,7 @@ def draw_schematic():
         )
         d.pop()
 
-        # Explicitly save the PDF version before the context manager closes (and saves SVG)
+        # Explicitly save PDF before context manager closes (which saves SVG)
         d.save(FILE_PDF)
 
 

@@ -1,7 +1,8 @@
-import sys
 import shutil
-import numpy as np
+import sys
+
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.animation import FFMpegWriter
 
 from . import config, dsp, io
@@ -53,8 +54,10 @@ def setup_crt_bloom(samples, fs, v_conf):
     for i in range(3):
         lw = 4 + (i * 4)
         alpha = 0.1 / (i + 1)
-        (l,) = ax.plot(x, np.zeros(samples), color="#32CD32", lw=lw, alpha=alpha)
-        lines.append(l)
+        (glow_line,) = ax.plot(
+            x, np.zeros(samples), color="#32CD32", lw=lw, alpha=alpha
+        )
+        lines.append(glow_line)
     (core,) = ax.plot(x, np.zeros(samples), color="#ccffcc", lw=1.2, alpha=1.0)
     lines.append(core)
 

@@ -1,12 +1,13 @@
-import sys
 import os
+import sys
 import time
+
 import numpy as np
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import daq, io, config
+from src import config, daq, io
 
 
 def record_stream():

@@ -1,10 +1,10 @@
-import sys
 import os
+import sys
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import daq, dsp, io, config
+from src import config, daq, dsp, io
 
 
 def main():
