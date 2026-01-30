@@ -20,5 +20,25 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
     "ruff>=0.14.14",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # pycodestyle, pyflakes, isort
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+
+testpaths = [
+    "oscilloscope-rp2040/tests",
+]
+
+pythonpath = [
+    "oscilloscope-rp2040/src",
 ]

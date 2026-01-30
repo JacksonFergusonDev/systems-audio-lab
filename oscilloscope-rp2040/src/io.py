@@ -1,7 +1,8 @@
 import os
 import sys
-import numpy as np
 from datetime import datetime
+
+import numpy as np
 import pandas as pd
 
 

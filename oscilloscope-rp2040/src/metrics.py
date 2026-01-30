@@ -1,8 +1,9 @@
+from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
 import pandas as pd
 import scipy.signal as spsig
-from typing import Dict, Tuple, Optional, Any
-import scipy.signal as spsig
+
 from . import dsp
 
 

@@ -1,10 +1,12 @@
-import time
 import json
 import os
-import numpy as np
+import time
+
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.signal import windows
-from . import daq, dsp, config
+
+from . import config, daq, dsp
 
 
 def save_calibration(fs: float):

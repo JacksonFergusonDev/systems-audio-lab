@@ -1,8 +1,9 @@
-import machine
 import array
-import micropython
-import sys
 import gc
+import sys
+
+import machine
+import micropython
 import uselect
 
 # -------------------------------------------------------------------------

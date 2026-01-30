@@ -1,6 +1,8 @@
-import serial
 import time
+
 import numpy as np
+import serial
+
 from . import config
 
 
