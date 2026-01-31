@@ -6,13 +6,7 @@ through the system audio, and streams the loopback/output capture from
 the DAQ to a live oscilloscope window.
 """
 
-import os
-import sys
-
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from sysaudio import audio, daq, viz  # noqa: E402
+from sysaudio import audio, daq, viz
 
 # Configuration
 SHAPE: str = "sine"  # Options: "sine", "triangle", "square", "saw"

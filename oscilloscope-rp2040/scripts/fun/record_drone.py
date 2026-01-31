@@ -7,18 +7,12 @@ DAQ interface. The resulting data is saved for use in harmonic landscape
 visualizations.
 """
 
-import os
-import sys
 import time
 from typing import List
 
 import numpy as np
 import sounddevice as sd
-
-# Ensure src is in path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from sysaudio import audio, config, daq, dsp, io  # noqa: E402
+from sysaudio import audio, config, daq, dsp, io
 
 # Configuration
 FREQ: float = 55.0

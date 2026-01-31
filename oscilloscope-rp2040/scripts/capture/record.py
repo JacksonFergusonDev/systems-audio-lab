@@ -6,13 +6,7 @@ This script connects to the RP2040, triggers a standard burst capture
 the result to the burst data directory.
 """
 
-import os
-import sys
-
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from sysaudio import config, daq, dsp, io  # noqa: E402
+from sysaudio import config, daq, dsp, io
 
 
 def main() -> None:

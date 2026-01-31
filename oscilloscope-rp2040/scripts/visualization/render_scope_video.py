@@ -7,13 +7,9 @@ through selecting a continuous recording file, choosing a visual effect style
 """
 
 import os
-import sys
 from typing import Any, Dict
 
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from sysaudio import config, io, render  # noqa: E402
+from sysaudio import config, io, render
 
 # Configuration for video output
 VIDEO_SETTINGS: Dict[str, Any] = {

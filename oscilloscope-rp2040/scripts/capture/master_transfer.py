@@ -6,13 +6,7 @@ or steady-state signals required for Bode plots and linearity analysis.
 It delegates the actual acquisition logic to the `experiments` module.
 """
 
-import os
-import sys
-
-# Ensure src is in path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from sysaudio import experiments  # noqa: E402
+from sysaudio import experiments
 
 # Configuration
 # Options: 'sweep' (Log Sine Sweep) or 'steady' (Single Frequency Burst)

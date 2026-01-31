@@ -6,13 +6,8 @@ stacked line plot (Joyplot).
 """
 
 import argparse
-import os
-import sys
 
-# Add project root
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from sysaudio import io, plots  # noqa: E402
+from sysaudio import io, plots
 
 
 def main() -> None:

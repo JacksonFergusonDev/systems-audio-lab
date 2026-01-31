@@ -7,14 +7,9 @@ experience. It is useful for reviewing long capture sessions.
 """
 
 import os
-import sys
 
 import numpy as np
-
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from sysaudio import config, dsp, io, viz  # noqa: E402
+from sysaudio import config, dsp, io, viz
 
 
 def main() -> None:
