@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
@@ -14,7 +14,7 @@ from scipy.interpolate import make_interp_spline
 from . import config, dsp, metrics
 
 # --- Style Configuration ---
-COLORS = {
+COLORS: Dict[str, str] = {
     "clean": "#2ecc71",  # Green (Input)
     "dirty": "#e74c3c",  # Red (Output)
     "noise": "#7f8c8d",  # Gray (Background)
@@ -24,6 +24,18 @@ COLORS = {
 
 
 def save_pdf_svg(fig: plt.Figure, savepath: Union[str, Path], **kwargs: Any) -> None:
+    """
+    Helper to save a figure in both PDF and SVG formats.
+
+    Parameters
+    ----------
+    fig : plt.Figure
+        The matplotlib figure object.
+    savepath : Union[str, Path]
+        The target path (extension is ignored/replaced).
+    **kwargs : Any
+        Additional arguments passed to fig.savefig().
+    """
     p = Path(savepath)
     stem = p.with_suffix("")
     fig.savefig(stem.with_suffix(".pdf"), **kwargs)
@@ -37,7 +49,25 @@ def plot_gain_stage(
     savepath: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Visualizes gain difference (Vpp)."""
+    """
+    Visualizes the gain difference (Vpp) between input and output signals.
+
+    Plots software-triggered waveforms to align phases and annotates the
+    calculated gain in dB.
+
+    Parameters
+    ----------
+    sig_clean : np.ndarray
+        Clean input signal.
+    sig_dirty : np.ndarray
+        Distorted/Amplified output signal.
+    fs : float
+        Sampling rate in Hz.
+    savepath : Optional[str]
+        Path to save the figure (without extension).
+    show : bool
+        Whether to display the plot.
+    """
     m = metrics.calculate_gain_metrics(sig_clean, sig_dirty, duration_ms=25, fs=fs)
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
@@ -83,7 +113,11 @@ def plot_spectral_floor(
     savepath: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Compares signal power spectrum against instrument noise floor."""
+    """
+    Compares signal power spectrum against the instrument noise floor.
+
+    Useful for validating SNR (Signal-to-Noise Ratio) in recordings.
+    """
     freqs_sig, mags_sig = metrics.compute_spectrum_data(sig_signal, fs)
     freqs_noise, mags_noise = metrics.compute_spectrum_data(sig_noise, fs)
 
@@ -121,7 +155,9 @@ def plot_spectrum_normalized(
     savepath: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Compares harmonic content normalized to 0dB."""
+    """
+    Compares harmonic content of two signals, normalized to Peak=1.0 (0dB).
+    """
     data = metrics.compute_normalized_spectra(sig_clean, sig_dirty, fs)
     fig = plt.figure(figsize=(12, 6))
 
@@ -162,7 +198,12 @@ def analyze_harmonics_fixed(
     savepath: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Bar chart of first N harmonics (Legacy Phase 1 function)."""
+    """
+    Generates a bar chart of the first N harmonics.
+
+    Prints the relative magnitudes of the first three harmonics to stdout
+    for quick analysis of timbre (e.g., Even vs Odd harmonics).
+    """
     df = metrics.extract_harmonics_list(signal, fs, fundamental_freq, n_harmonics)
 
     if df is None:
@@ -210,7 +251,10 @@ def plot_bode_response(
     show: bool = True,
 ) -> None:
     """
-    Plots the Deconvolved Linear Frequency Response and the extracted Impulse Response.
+    Plots the Deconvolved Linear Frequency Response and Impulse Response.
+
+    Uses Farina's method (ESS Deconvolution) to separate linear response
+    from harmonic distortion.
     """
     data = metrics.compute_bode_data(sig_src, sig_dut, fs)
 
@@ -276,10 +320,15 @@ def plot_transfer_curve(
     savepath: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Visualizes Soft Clipping Sigmoid (Vin vs Vout)."""
+    """
+    Visualizes the Non-Linear Transfer Characteristic (Vin vs Vout).
+
+    This "Soft Clipping Sigmoid" reveals the saturation behavior of the DUT.
+    """
     x, y = metrics.prepare_transfer_curve(sig_src, sig_dut)
     fig = plt.figure(figsize=(8, 8))
 
+    # Decimate for scatter performance
     step = max(1, len(x) // 5000)
     plt.scatter(x[::step], y[::step], c=x[::step], cmap="coolwarm", alpha=0.1, s=2)
     plt.plot(
@@ -313,10 +362,16 @@ def plot_thd_fingerprint(
     savepath: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Visualizes 1kHz THD Spectrum."""
+    """
+    Visualizes the THD spectrum at 1kHz.
+
+    Annotates the first few harmonics to identify the distortion profile
+    (e.g., dominance of Even vs Odd harmonics).
+    """
     thd_pct = dsp.calculate_selective_thd(sig, fs, fundamental_freq=1000.0)
     freqs, mags = dsp.compute_spectrum(sig, fs)
 
+    # Normalize to fundamental
     fund_mask = (freqs > 900) & (freqs < 1100)
     mags_norm = mags / np.max(mags[fund_mask]) if np.any(fund_mask) else mags
 
@@ -355,11 +410,15 @@ def plot_final_report(
     savepath: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Generates composite Figure 1 (Morphology + Harmonics)."""
+    """
+    Generates the composite Figure 1 (Waveform Morphology + Harmonic Analysis).
+
+    Combines a time-domain phase-aligned plot with a bar chart of harmonic content.
+    """
     fig = plt.figure(figsize=(16, 7))
     gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1.2])
 
-    # Panel A
+    # Panel A: Time Domain
     ax1 = plt.subplot(gs[0])
     samples = int((duration_ms / 1000) * fs)
     t = (np.arange(samples) / fs) * 1000
@@ -380,7 +439,7 @@ def plot_final_report(
     ax1.legend(loc="lower right")
     ax1.grid(True, alpha=0.3)
 
-    # Panel B
+    # Panel B: Frequency Domain
     ax2 = plt.subplot(gs[1])
     df = metrics.compute_spectral_comparison(sig_clean, sig_dirty, fs)
     if df is not None:
@@ -415,8 +474,14 @@ def plot_final_report(
         plt.show()
 
 
-def plot_health_check(voltages: np.ndarray, fs: float, title: str, is_healthy: bool):
-    """Standard verification plot."""
+def plot_health_check(
+    voltages: np.ndarray, fs: float, title: str, is_healthy: bool
+) -> None:
+    """
+    Standard diagnostics plot for signal integrity verification.
+
+    Shows the signal trace with overlay lines for voltage rails and virtual ground.
+    """
     plt.figure(figsize=(12, 4))
     plt.plot(voltages, color="lime" if is_healthy else "orange", lw=0.7)
 
@@ -434,42 +499,59 @@ def plot_health_check(voltages: np.ndarray, fs: float, title: str, is_healthy: b
     plt.show()
 
 
-def _lerp(a, b, t):
+def _lerp(a: float, b: float, t: float) -> float:
     return a + (b - a) * t
 
 
-def _lerp_rgba(c0, c1, t):
+def _lerp_rgba(c0: str, c1: str, t: float) -> Tuple[float, float, float, float]:
     r0, g0, b0, a0 = to_rgba(c0)
     r1, g1, b1, a1 = to_rgba(c1)
     return (_lerp(r0, r1, t), _lerp(g0, g1, t), _lerp(b0, b1, t), _lerp(a0, a1, t))
 
 
 def plot_joyplot_stacked(
-    signal,
-    lines=8,
-    decimate=7,
-    x_zoom=35,
-    wave_scale=20,
-    output_file="joyplot.pdf",
-):
+    signal: np.ndarray,
+    lines: int = 8,
+    decimate: int = 7,
+    x_zoom: int = 35,
+    wave_scale: float = 20,
+    output_file: str = "joyplot.pdf",
+) -> None:
     """
     Renders a Ridgeline/Joyplot (stacked lines) from the signal.
-    Moved from scripts/visualization/joyplot.py (formerly generate_joyplot).
+
+    Originally from scripts/visualization/joyplot.py. Creates a vectorized
+    PDF graphic suitable for scientific posters or cover art.
+
+    Parameters
+    ----------
+    signal : np.ndarray
+        Input audio signal.
+    lines : int
+        Number of stacked lines to generate.
+    decimate : int
+        Downsampling factor to reduce complexity.
+    x_zoom : int
+        Horizontal zoom factor.
+    wave_scale : float
+        Vertical scaling factor for the waves.
+    output_file : str
+        Filename for the saved output.
     """
     # 1. Pre-process
-    signal = signal.flatten()
-    signal = signal[::decimate]
+    sig_flat = signal.flatten()
+    sig_flat = sig_flat[::decimate]
 
-    signal = signal.astype(float)
-    smin, smax = np.min(signal), np.max(signal)
+    sig_flat = sig_flat.astype(float)
+    smin, smax = np.min(sig_flat), np.max(sig_flat)
     if smax == smin:
         print("Error: Signal is constant; cannot normalize.")
         return
-    signal = (signal - smin) / (smax - smin)
-    signal = signal - 0.5  # center around 0
+    sig_flat = (sig_flat - smin) / (smax - smin)
+    sig_flat = sig_flat - 0.5  # center around 0
 
     # 2. Slice into segments
-    total_samples = len(signal)
+    total_samples = len(sig_flat)
     samples_per_line = total_samples // lines
     line_spacing = 15
 
@@ -491,7 +573,7 @@ def plot_joyplot_stacked(
         if end > total_samples:
             break
 
-        segment = signal[start:end]
+        segment = sig_flat[start:end]
         x = np.arange(len(segment))
 
         y_base = (lines - i) * line_spacing
@@ -512,7 +594,7 @@ def plot_joyplot_stacked(
             fill_alpha = alpha
         else:
             fill_color = FILL_COLOR
-            fill_alpha = 1.0
+            fill_alpha = 1.0  # type: ignore
 
         ax.fill_between(
             x, y_base, y_curve, color=fill_color, zorder=i, alpha=fill_alpha
@@ -532,15 +614,19 @@ def plot_joyplot_stacked(
     print(f"Rendering vector graphic to {output_file}...")
     plt.tight_layout()
     plt.savefig(
-        output_file, format="pdf", transparent=True, bbox_inches=None, pad_inches=0
+        output_file, format="pdf", transparent=True, bbox_inches=None, pad_inches=0.0
     )
     print("Done.")
 
 
-def plot_phase_portrait(signal, delay, filename_base="phase_portrait"):
+def plot_phase_portrait(
+    signal: np.ndarray, delay: int, filename_base: str = "phase_portrait"
+) -> None:
     """
-    Renders a phase portrait (Neon Torus).
-    Moved from scripts/fun/neon_torus.py.
+    Renders a phase portrait (Time-Delay Embedding / Neon Torus).
+
+    Plots x(t) vs x(t + delay) with time-mapped coloring to visualize
+    chaos or periodicity in the signal.
     """
     print("🎨 Rendering Phase Portrait...")
 
@@ -575,27 +661,46 @@ def plot_phase_portrait(signal, delay, filename_base="phase_portrait"):
     os.makedirs(save_dir, exist_ok=True)
 
     pdf_path = os.path.join(save_dir, f"{filename_base}.pdf")
-    plt.savefig(pdf_path, bbox_inches="tight", pad_inches=0, facecolor="black")
+    plt.savefig(pdf_path, bbox_inches="tight", pad_inches=0.0, facecolor="black")
     print(f"✨ Saved vector plots to: {pdf_path}")
     plt.show()
 
 
 def plot_spectral_landscape(
-    signal,
-    fs,
-    slices=70,
-    overlap=0.14,
-    gamma=0.8,
-    res_factor=10,
-    filename_base="harmonic_landscape",
-):
+    signal: np.ndarray,
+    fs: float,
+    slices: int = 70,
+    overlap: float = 0.14,
+    gamma: float = 0.8,
+    res_factor: int = 10,
+    filename_base: str = "harmonic_landscape",
+) -> None:
     """
-    Renders a 3D spectral landscape.
-    Moved from scripts/fun/render_landscape.py (formerly plot_joyplot).
+    Renders a 3D spectral landscape ("Joyplot" style in frequency domain).
+
+    Visualizes how the frequency spectrum evolves over time by stacking
+    successive FFT slices.
+
+    Parameters
+    ----------
+    signal : np.ndarray
+        Input audio signal.
+    fs : float
+        Sampling rate.
+    slices : int
+        Number of spectral slices to render.
+    overlap : float
+        Vertical overlap between slices.
+    gamma : float
+        Gamma correction for magnitude scaling.
+    res_factor : int
+        Smoothing resolution factor.
+    filename_base : str
+        Base filename for the saved PDF.
     """
     print(f"🎨 Rendering Landscape (Gamma={gamma})...")
 
-    # Gradient
+    # Gradient Configuration
     CUSTOM_PALETTE = [
         "#020202",  # Black
         "#13010B",  # Deep Purple
@@ -662,7 +767,7 @@ def plot_spectral_landscape(
 
         # 6. Color Logic
         vol_metric = np.max(np.abs(chunk))
-        vol_metric = max(0.0, min(1.0, vol_metric))
+        vol_metric = max(0.0, min(1.0, float(vol_metric)))
         color = cmap(vol_metric)
 
         # Draw
@@ -680,7 +785,7 @@ def plot_spectral_landscape(
     )
     os.makedirs(save_dir, exist_ok=True)
     pdf_path = os.path.join(save_dir, f"{filename_base}.pdf")
-    plt.savefig(pdf_path, bbox_inches="tight", pad_inches=0, transparent=True)
+    plt.savefig(pdf_path, bbox_inches="tight", pad_inches=0.0, transparent=True)
 
     print(f"✨ Saved to: {os.path.basename(pdf_path)}")
     plt.show()
