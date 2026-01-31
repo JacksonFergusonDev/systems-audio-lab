@@ -6,12 +6,8 @@ and displays a static report containing the waveform and its FFT magnitude spect
 """
 
 import os
-import sys
 
-# Ensure src is in path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from src import config, io, viz
+from sysaudio import config, io, viz
 
 
 def main() -> None:

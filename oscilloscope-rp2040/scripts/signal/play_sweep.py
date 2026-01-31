@@ -7,15 +7,8 @@ window. This allows for visual verification of the transfer function measurement
 setup before committing to a recording.
 """
 
-import os
-import sys
-
 import sounddevice as sd
-
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from src import audio, daq, viz  # noqa: E402
+from sysaudio import audio, daq, viz
 
 # Configuration
 F_START: float = 20.0  # Start Frequency (Hz)

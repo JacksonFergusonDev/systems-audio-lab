@@ -32,28 +32,50 @@ The MicroPython logic running on the MCU.
 * **Engine:** Uses `@micropython.native` emitters for a jitter-free polling loop.
 * **Protocol:** Implements a binary "Handshake" protocol (`s` for Science Burst, `v` for Video) to manage USB serial backpressure.
 
-### [`src/`](./src)
+### [`sysaudio/`](./sysaudio)
 The Python library backing the analysis pipeline.
-* **`src.daq`**: Hardware abstraction for USB UART stream processing.
-* **`src.audio`**: Host-side signal generation (Sine, Square, Log Sweeps) via `sounddevice`.
-* **`src.dsp`**: Signal processing (FFT, THD, Triggering).
-* **`src.analysis`**: Publication-ready plotting and reporting engines.
+* **Core & Hardware**
+    * `sysaudio.daq`: Hardware abstraction for USB UART stream processing.
+    * `sysaudio.calibration`: Routines for robust sample rate ($F_s$) verification.
+    * `sysaudio.audio`: Host-side signal generation (Sine, Square, Log Sweeps) via `sounddevice`.
+* **Experimentation**
+    * `sysaudio.experiments`: High-level automation for Notebooks (Linearity, Bandwidth, THD captures).
+    * `sysaudio.io`: Standardized file handling for burst (`.npz`) and continuous signal data.
+* **Analysis & Viz**
+    * `sysaudio.dsp`: Signal processing primitives (FFT, THD calculation, Triggering).
+    * `sysaudio.plots`: Publication-ready plotting wrappers (Bode, Transfer Curves, THD Fingerprints).
+    * `sysaudio.viz`: Real-time rendering engines for the live oscilloscope.
 
 ### [`scripts/`](./scripts)
 User-facing tools for interaction.
 * **`capture/`**: Headless recording tools.
-    * `record.py`: High-fidelity bursts.
-    * `measure_transfer.py`: Automated stimulus-response testing (Sweep/Steady).
+    * `record.py`: High-fidelity burst capture.
+    * `master_transfer.py`: Automated stimulus-response testing (Sweep/Steady).
+    * `stream.py`: Continuous data streaming utility.
 * **`signal/`**: Interactive function generators.
     * `play_wave.py`: Infinite waveform generator with live scope.
     * `play_sweep.py`: Logarithmic sine sweep generator.
-* **`visualization/`**: Real-time monitoring (`live_scope.py`) and rendering (`render_scope_video.py`).
+* **`visualization/`**: Monitoring and rendering.
+    * `live_scope.py`: Real-time oscilloscope with FFT.
+    * `playback_scope.py`: Offline replay of captured signal files.
+    * `joyplot.py`: Ridge-line plot generation for spectral waterfalls.
+    * `render_scope_video.py`: Exports scope data to video frames.
+* **`fun/`**: Creative coding experiments.
+    * `neon_torus.py`: XY oscilloscope visualization.
+    * `render_landscape.py`: 3D terrain generation from audio data. Used to generate the title graphic for [systems_audio_tech_report.pdf](../docs/systems_audio_tech_report.pdf)
 
 ### [`notebooks/`](./notebooks)
 The scientific workbench.
-* **`01_acquisition.ipynb`**: Hardware calibration and raw data inspection.
-* **`02_analysis.ipynb`**: Empirical characterization of the Red Llama Overdrive (Harmonics & Topology).
-* **`03_transfer_function.ipynb`**: System identification (Linearity & Frequency Response).
+* **`01_instrument_acquisition.ipynb`**: Hardware calibration and raw data inspection.
+* **`02_instrument_analysis.ipynb`**: Empirical characterization of the Red Llama Overdrive (Harmonics & Topology).
+* **`03_transfer_acquisition.ipynb`**: Automated capture of transfer function datasets.
+    * *Set A:* Linearity (Triangle Wave).
+    * *Set B:* Bandwidth (Log Sine Sweep).
+    * *Set C:* Standard THD (1kHz Sine).
+* **`04_transfer_analysis.ipynb`**: System Identification (In Progress).
+    * *Bode Response:* Magnitude and Phase analysis.
+    * *Transfer Curves:* Input vs. Output linearity mapping.
+    * *THD Fingerprinting:* Harmonic distortion profiling.
 
 ## Hardware Requirements
 **Total Cost:** ~$4.14 USD
@@ -78,26 +100,28 @@ The scientific workbench.
 Flash the RP2040 with MicroPython (v1.27+) and copy `firmware/main.py` to the root of the device.
 
 ### 2. Host Environment
-Install dependencies (requires Python 3.10+):
+Dependencies are managed at the **project root**. Run the following from the top-level `systems-audio-lab` directory:
 
 ```bash
-uv sync
+# Install dependencies and link the sysaudio package
+uv pip install -e .
 ```
 
 ### 3. Execution
+Run scripts from the project root to ensure proper package resolution.
 
 Real-Time Monitoring:
 ```bash
-python scripts/visualization/live_scope.py
+python oscilloscope-rp2040/scripts/visualization/live_scope.py
 ```
 
 Function Generator (Signal + Scope):
 ```bash
-python scripts/signal/play_wave.py
+python oscilloscope-rp2040/scripts/signal/play_wave.py
 ```
 
 Automated Transfer Function Capture:
 ```bash
 # Capture a 5-second log sweep for Bode plotting
-python scripts/capture/measure_transfer.py sweep --duration 5 --amp 0.5
+python oscilloscope-rp2040/scripts/capture/master_transfer.py sweep --duration 5 --amp 0.5
 ```

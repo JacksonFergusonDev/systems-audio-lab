@@ -71,6 +71,51 @@ This project consists of four interconnected subsystems, each one enabling the n
 
 ---
 
+## 🚀 Getting Started
+
+This project uses **uv** for dependency management.
+
+### 1. Clone & Enter
+
+```bash
+git clone https://github.com/JacksonFergusonDev/systems-audio-lab.git
+cd systems-audio-lab
+```
+
+### 2. Install Environment
+We use an editable install so changes to the `sysaudio` library are immediately reflected in the notebooks.
+
+```bash
+# Initialize virtual environment
+uv venv
+
+# Activate environment
+source .venv/bin/activate  # Mac/Linux
+# .venv\Scripts\activate   # Windows
+
+# Install dependencies and the local package
+uv pip install -e .
+```
+
+### 3. Usage Options
+Option A: Interactive Analysis (Jupyter) Launch the lab to view the engineering reports and signal processing pipelines.
+
+```bash
+jupyter lab
+```
+
+Option B: Headless Tools (CLI Scripts) You can run the capture and visualization tools directly from the command line.
+
+```bash
+# Example: Launch the real-time oscilloscope visualization
+python oscilloscope-rp2040/scripts/visualization/live_scope.py
+
+# Example: Record a single burst of data
+python oscilloscope-rp2040/scripts/capture/record.py
+```
+
+---
+
 ## 📂 Repository Structure
 
 ```text
@@ -83,7 +128,7 @@ This project consists of four interconnected subsystems, each one enabling the n
 │   │   ├── 02_instrument_analysis.ipynb     # Harmonic Analysis 🟢
 │   │   ├── 03_transfer_acquisition.ipynb    # Sine Sweep Generation 🟢
 │   │   └── 04_transfer_analysis.ipynb       # Deconvolution (In Progress) 🟡
-│   ├── src/                   # Analysis Library (FFT, Plotting, Signal Processing)
+│   ├── sysaudio/                   # Analysis Library (FFT, Plotting, Signal Processing)
 │   └── schematics/            # Signal Conditioning Circuit Design
 ├── red-llama-build/           # Guitar Overdrive Test Circuit
 │   └── procurement/           # Bills of Materials

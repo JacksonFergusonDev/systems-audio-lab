@@ -6,17 +6,11 @@ captures the resulting signal via DAQ, and visualizes it as a phase portrait
 using time-delay embedding.
 """
 
-import os
-import sys
 import time
 
 import numpy as np
 import sounddevice as sd
-
-# Ensure src is in path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from src import audio, daq, dsp, plots  # noqa: E402
+from sysaudio import audio, daq, dsp, plots
 
 # Configuration
 FREQ_1: float = 55.0

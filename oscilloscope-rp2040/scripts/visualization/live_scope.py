@@ -6,17 +6,11 @@ matplotlib blitting loop to visualize data streaming from the DAQ.
 It serves as the foundational example for real-time plotting in this project.
 """
 
-import os
-import sys
 import time
 from typing import Any, cast
 
 import matplotlib.pyplot as plt
-
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-from src import daq, dsp, viz  # noqa: E402
+from sysaudio import daq, dsp, viz
 
 
 def main() -> None:
