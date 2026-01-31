@@ -110,7 +110,9 @@ def calibrate_fs_robust(visualize: bool = True) -> float:
 
         # 5. Calculate SNR (exclude 10 bins around peak)
         noise_mask = np.ones(len(fft_mag), dtype=bool)
-        noise_mask[max(0, peak_idx - 5) : min(len(fft_mag), peak_idx + 5)] = False
+        noise_mask[max(0, int(peak_idx) - 5) : min(len(fft_mag), int(peak_idx) + 5)] = (
+            False
+        )
         noise_floor = np.mean(fft_mag[noise_mask])
 
         snr = peak_mag / noise_floor if noise_floor > 0 else 0

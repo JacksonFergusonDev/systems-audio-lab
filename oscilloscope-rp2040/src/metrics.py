@@ -307,7 +307,7 @@ def generate_inverse_filter(
     inv_filter = np.flip(sweep * w)
     inv_filter /= np.max(np.abs(inv_filter))
 
-    return inv_filter
+    return inv_filter  # type: ignore[no-any-return]
 
 
 def compute_impulse_response(
@@ -338,7 +338,7 @@ def compute_impulse_response(
     peak_idx_local = np.argmax(np.abs(ir_raw[search_start:]))
     peak_idx = search_start + peak_idx_local
 
-    return ir_raw, peak_idx
+    return ir_raw, int(peak_idx)
 
 
 def compute_bode_data(

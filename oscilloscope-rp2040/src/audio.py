@@ -51,7 +51,7 @@ def generate_log_sweep(
     B = 2.0 * np.pi * f_start / np.log(R)
     phase = B * (R**t - 1.0)
 
-    return (amp * np.sin(phase)).astype(np.float32)
+    return (amp * np.sin(phase)).astype(np.float32)  # type: ignore[no-any-return]
 
 
 def generate_wave_block(
@@ -92,7 +92,7 @@ def generate_wave_block(
     elif shape == "triangle":
         x = 2.0 * np.abs(2.0 * (t * f_hz - np.floor(t * f_hz + 0.5))) - 1.0
     elif shape == "noise":
-        x = np.random.uniform(-1.0, 1.0, size=t.shape[0])
+        x = np.random.uniform(-1.0, 1.0, size=t.shape[0])  # type: ignore[assignment]
     else:
         raise ValueError(f"Unknown shape: {shape}")
 

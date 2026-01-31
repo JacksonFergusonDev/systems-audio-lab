@@ -37,7 +37,7 @@ def remove_dc(signal: np.ndarray) -> np.ndarray:
     np.ndarray
         The signal centered around 0.0.
     """
-    return signal - np.mean(signal)
+    return signal - np.mean(signal)  # type: ignore[no-any-return]
 
 
 def software_trigger(signal: np.ndarray, threshold: float = config.V_MID) -> np.ndarray:
