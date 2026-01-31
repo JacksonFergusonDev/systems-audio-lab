@@ -133,7 +133,7 @@ def setup_cyber_glitch(
 
 
 # Registry of available effects
-EFFECTS: Dict[str, Tuple[str, Callable]] = {
+EFFECTS: Dict[str, Tuple[str, Callable[..., Any]]] = {
     "1": ("Clean (Clinical)", setup_clean),
     "2": ("CRT Bloom (Phosphor)", setup_crt_bloom),
     "3": ("Cyber Glitch (Aberration)", setup_cyber_glitch),
