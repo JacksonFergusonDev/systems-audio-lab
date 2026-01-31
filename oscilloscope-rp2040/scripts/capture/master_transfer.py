@@ -1,19 +1,39 @@
+"""
+Orchestration script for capturing transfer function data.
+
+This script serves as the primary entry point for capturing audio sweeps
+or steady-state signals required for Bode plots and linearity analysis.
+It delegates the actual acquisition logic to the `experiments` module.
+"""
+
 import os
 import sys
 
+# Ensure src is in path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import experiments
+from src import experiments  # noqa: E402
 
-# --- USER CONFIGURATION ---
-MODE = "sweep"
+# Configuration
+# Options: 'sweep' (Log Sine Sweep) or 'steady' (Single Frequency Burst)
+MODE: str = "sweep"
 
 
-def main():
+def main() -> None:
+    """
+    Main execution entry point.
+
+    Selects the experiment mode based on the global MODE constant and
+    calls the appropriate function from `src.experiments`.
+    """
     if MODE == "sweep":
-        experiments.capture_sweep_transfer(20.0, 20000.0, 5.0, 0.5)
+        # Capture a 20Hz-20kHz log sweep over 5 seconds at 50% amplitude
+        experiments.capture_sweep_transfer(
+            f_start=20.0, f_end=20000.0, duration=5.0, amp=0.5
+        )
     elif MODE == "steady":
-        experiments.capture_steady_transfer("sine", 1000.0, 0.5)
+        # Capture a 1kHz sine wave burst
+        experiments.capture_steady_transfer(shape="sine", freq=1000.0, amp=0.5)
     else:
         print(f"❌ Unknown MODE: {MODE}")
 
