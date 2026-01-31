@@ -1,15 +1,33 @@
 import time
+from typing import Any, Callable, Iterable, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+from matplotlib.text import Text
 
 from . import config, dsp
 
 
-def init_scope_plot(samples=config.LIVE_SAMPLES, fs=config.FS_DEFAULT):
+def init_scope_plot(
+    samples: int = config.LIVE_SAMPLES, fs: float = config.FS_DEFAULT
+) -> Tuple[Figure, Axes, Line2D, Text]:
     """
-    Sets up a dark-mode oscilloscope figure.
-    Returns: (fig, ax, line, text_element)
+    Sets up a dark-mode oscilloscope figure with reference lines.
+
+    Parameters
+    ----------
+    samples : int
+        Number of samples to display in the window.
+    fs : float
+        Sampling rate in Hz.
+
+    Returns
+    -------
+    Tuple[Figure, Axes, Line2D, Text]
+        The figure, axis, signal line object, and status text object.
     """
     plt.style.use("dark_background")
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -26,7 +44,7 @@ def init_scope_plot(samples=config.LIVE_SAMPLES, fs=config.FS_DEFAULT):
     ax.set_ylabel("Voltage (V)")
     ax.grid(True, alpha=0.2)
 
-    # Reference lines
+    # Reference lines (Virtual Ground and 3.3V Rail)
     ax.axhline(config.V_MID, color="cyan", alpha=0.3, linestyle=":")
     ax.axhline(config.V_REF, color="red", alpha=0.3, lw=1)
 
@@ -36,27 +54,38 @@ def init_scope_plot(samples=config.LIVE_SAMPLES, fs=config.FS_DEFAULT):
 
 
 def run_live_scope(
-    stream_generator, title="Live Scope", stop_condition=None, on_launch=None
-):
+    stream_generator: Iterable[np.ndarray],
+    title: str = "Live Scope",
+    stop_condition: Optional[Callable[[], bool]] = None,
+    on_launch: Optional[Callable[[], None]] = None,
+) -> None:
     """
-    Reusable oscilloscope loop.
+    Runs a reusable, high-performance oscilloscope loop using blitting.
 
-    Args:
-        on_launch: Optional function to call once the window is open and ready.
-                   (Used to start audio playback in sync with the visualizer)
+    Parameters
+    ----------
+    stream_generator : Iterable[np.ndarray]
+        Iterator yielding chunks of raw ADC data.
+    title : str
+        Window title.
+    stop_condition : Optional[Callable[[], bool]]
+        Function returning True when the loop should exit (e.g., audio finished).
+    on_launch : Optional[Callable[[], None]]
+        Callback executed once the window is rendered and ready.
+        Useful for syncing audio playback start.
     """
     fig, ax, line, fps_text = init_scope_plot()
     ax.set_title(title)
 
-    # 1. Render the empty plot first to establish the window
+    # 1. Render initial frame to establish window context
     plt.show(block=False)
     fig.canvas.draw()
     background = fig.canvas.copy_from_bbox(ax.bbox)
 
-    # 2. Flush events to ensure the window is actually visible
+    # 2. Flush events to force window visibility before processing data
     fig.canvas.flush_events()
 
-    # 3. NOW start the external process (Audio)
+    # 3. Trigger external process (e.g., Audio) now that viz is ready
     if on_launch:
         print("🚀 Scope Ready. Triggering Launch Callback...")
         on_launch()
@@ -68,7 +97,7 @@ def run_live_scope(
 
     try:
         for raw_data in stream_generator:
-            # Check external stop condition (e.g., audio finished)
+            # Check external stop condition
             if stop_condition and stop_condition():
                 break
 
@@ -76,11 +105,11 @@ def run_live_scope(
             if not plt.fignum_exists(fig.number):
                 break
 
-            # DSP Processing
+            # DSP Processing & Stabilization
             voltages = dsp.raw_to_volts(raw_data)
             stable_wave = dsp.software_trigger(voltages)
 
-            # Blitting Update
+            # Blitting Update (Redraw only the line, not the grid)
             fig.canvas.restore_region(background)
             line.set_ydata(stable_wave)
             ax.draw_artist(line)
@@ -110,10 +139,20 @@ def run_playback_scope(
     fs: float,
     samples_per_frame: int = config.LIVE_SAMPLES,
     title: str = "Playback",
-):
+) -> None:
     """
-    Runs a scope visualization from a recorded array.
-    Moved from scripts/visualization/playback_scope.py.
+    Simulates a live scope visualization from a recorded data array.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Full recording array (voltages).
+    fs : float
+        Sampling rate in Hz.
+    samples_per_frame : int
+        Number of samples to display per frame.
+    title : str
+        Window title.
     """
     total_samples = data.size
     duration_sec = total_samples / fs
@@ -123,15 +162,15 @@ def run_playback_scope(
     fig, ax, line, status_text = init_scope_plot()
     ax.set_title(title)
 
-    # Handle window close
+    # Handle window close event
     stop_flag = {"value": False}
 
-    def on_close(event):
+    def on_close(event: Any) -> None:
         stop_flag["value"] = True
 
     fig.canvas.mpl_connect("close_event", on_close)
 
-    # Pre-calc background
+    # Pre-calc background for blitting
     plt.show(block=False)
     fig.canvas.draw()
     background = fig.canvas.copy_from_bbox(ax.bbox)
@@ -142,7 +181,7 @@ def run_playback_scope(
         while not stop_flag["value"]:
             elapsed = time.time() - start_time
 
-            # Determine frame
+            # Determine current frame based on real time
             current_frame_idx = int(elapsed * (fs / samples_per_frame))
 
             if current_frame_idx >= total_frames:
@@ -171,7 +210,7 @@ def run_playback_scope(
             fig.canvas.blit(ax.bbox)
             fig.canvas.flush_events()
 
-            # Sync check
+            # Sync check (Sleep if rendering is faster than real-time)
             next_frame_time = (current_frame_idx + 1) * (samples_per_frame / fs)
             sleep_time = (start_time + next_frame_time) - time.time()
             if sleep_time > 0:
@@ -183,10 +222,20 @@ def run_playback_scope(
         plt.close(fig)
 
 
-def analyze_signal_plot(signal: np.ndarray, fs: float, title: str = "Signal Analysis"):
+def analyze_signal_plot(
+    signal: np.ndarray, fs: float, title: str = "Signal Analysis"
+) -> None:
     """
-    Static analysis plot for a captured signal file.
-    Shows Time Domain and Frequency Spectrum.
+    Generates a static analysis plot showing Time Domain and Frequency Spectrum.
+
+    Parameters
+    ----------
+    signal : np.ndarray
+        Signal voltage array.
+    fs : float
+        Sampling rate in Hz.
+    title : str
+        Plot title.
     """
     # Prep analysis
     ac_signal = dsp.remove_dc(signal)
@@ -198,6 +247,7 @@ def analyze_signal_plot(signal: np.ndarray, fs: float, title: str = "Signal Anal
 
     plt.figure(figsize=(12, 8))
 
+    # Subplot 1: Time Domain
     plt.subplot(2, 1, 1)
     plt.plot(t_axis, signal, color="lime")
     plt.title(f"{title} | Pitch: {fundamental:.1f} Hz")
@@ -205,6 +255,7 @@ def analyze_signal_plot(signal: np.ndarray, fs: float, title: str = "Signal Anal
     plt.ylabel("Voltage (V)")
     plt.xlabel("Time (ms)")
 
+    # Subplot 2: Frequency Domain
     plt.subplot(2, 1, 2)
     plt.plot(freqs, mags, color="orange")
     plt.xlim(0, 2000)
