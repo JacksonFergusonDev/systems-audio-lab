@@ -19,10 +19,21 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mypy>=1.19.1",
     "nbmake>=1.5.5",
+    "pandas-stubs>=2.3.3.260113",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "ruff>=0.14.14",
+    "scipy-stubs>=1.17.0.2",
+    "types-colorama>=0.4.15.20250801",
+    "types-decorator>=5.2.0.20251101",
+    "types-defusedxml>=0.7.0.20250822",
+    "types-jsonschema>=4.26.0.20260109",
+    "types-pexpect>=4.9.0.20260127",
+    "types-pygments>=2.19.0.20251121",
+    "types-pyserial>=3.5.0.20251001",
+    "types-seaborn>=0.13.2.20251221",
 ]
 
 [tool.ruff]
@@ -43,3 +54,27 @@ testpaths = [
 pythonpath = [
     "oscilloscope-rp2040/src",
 ]
+
+[tool.mypy]
+mypy_path = "oscilloscope-rp2040"
+strict = true
+pretty = true
+show_error_codes = true
+show_column_numbers = true
+
+exclude = [
+    "schematic\\.py$",
+    "notebooks/.*",
+    "\\.ipynb_checkpoints/.*",
+    "firmware/.*"
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "scipy.*",
+    "sounddevice.*",
+    "serial.*",
+    "seaborn.*",
+    "matplotlib.*"
+]
+ignore_missing_imports = true
