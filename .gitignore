@@ -52,3 +52,5 @@ env/
 .idea/
 
 *.ipynb_checkpoints
+
+*.egg-info/
