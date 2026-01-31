@@ -1,0 +1,17 @@
+# Jupyter Notebooks
+*.ipynb diff=jupyternotebook merge=jupyternotebook
+
+# Binary Data (Critical for your .npz files)
+*.npz binary
+*.npy binary
+*.bin binary
+
+# Generated Assets (Suppress noisy XML diffs)
+*.svg binary
+*.pdf binary
+
+# Project Meta
+uv.lock linguist-generated
+
+# Firmware Safety
+* text=auto
