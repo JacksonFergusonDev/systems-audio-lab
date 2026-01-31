@@ -18,7 +18,7 @@ import sounddevice as sd
 # Ensure src is in path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import audio, config, daq, dsp, io  # noqa: E402
+from sysaudio import audio, config, daq, dsp, io  # noqa: E402
 
 # Configuration
 FREQ: float = 55.0

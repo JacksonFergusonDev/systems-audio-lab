@@ -12,7 +12,7 @@ import sys
 # Ensure src is in path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import config, dsp, io, plots  # noqa: E402
+from sysaudio import config, dsp, io, plots  # noqa: E402
 
 
 def main() -> None:

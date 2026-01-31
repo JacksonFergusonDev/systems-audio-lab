@@ -13,7 +13,7 @@ from typing import Any, Dict
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import config, io, render  # noqa: E402
+from sysaudio import config, io, render  # noqa: E402
 
 # Configuration for video output
 VIDEO_SETTINGS: Dict[str, Any] = {

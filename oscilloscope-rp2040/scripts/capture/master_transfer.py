@@ -12,7 +12,7 @@ import sys
 # Ensure src is in path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import experiments  # noqa: E402
+from sysaudio import experiments  # noqa: E402
 
 # Configuration
 # Options: 'sweep' (Log Sine Sweep) or 'steady' (Single Frequency Burst)

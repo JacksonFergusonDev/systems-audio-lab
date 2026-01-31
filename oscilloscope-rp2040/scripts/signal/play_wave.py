@@ -12,7 +12,7 @@ import sys
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import audio, daq, viz  # noqa: E402
+from sysaudio import audio, daq, viz  # noqa: E402
 
 # Configuration
 SHAPE: str = "sine"  # Options: "sine", "triangle", "square", "saw"

@@ -12,7 +12,7 @@ import sys
 # Add project root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import io, plots  # noqa: E402
+from sysaudio import io, plots  # noqa: E402
 
 
 def main() -> None:
