@@ -2,28 +2,49 @@ import glob
 import os
 import sys
 from datetime import datetime
+from typing import Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
 
-def ensure_dir(directory: str):
+def ensure_dir(directory: str) -> None:
+    """Ensures that the specified directory exists, creating it if necessary."""
     if not os.path.exists(directory):
         os.makedirs(directory)
 
 
 def save_signal(
-    signal: np.ndarray, fs: float, directory: str, prefix: str = "capture", **metadata
-):
+    signal: np.ndarray,
+    fs: float,
+    directory: str,
+    prefix: str = "capture",
+    **metadata: Any,
+) -> str:
     """
-    Saves signal, fs, and ANY extra metadata to a timestamped .npz file.
+    Saves signal, fs, and arbitrary metadata to a timestamped .npz file.
 
-    Usage:
-        save_signal(sig, fs, dir, v_ref=3.3, gain=1, notes="Bridge pickup")
+    Parameters
+    ----------
+    signal : np.ndarray
+        The signal data array.
+    fs : float
+        Sampling frequency in Hz.
+    directory : str
+        Directory to save the file in.
+    prefix : str, optional
+        Prefix for the filename. Defaults to "capture".
+    **metadata : Any
+        Additional keyword arguments to be stored as metadata in the .npz file.
+
+    Returns
+    -------
+    str
+        The full path to the saved file.
     """
     ensure_dir(directory)
 
-    # ISO 8601 Timestamp (The gold standard)
+    # ISO 8601 Timestamp
     timestamp_str = datetime.now().isoformat()
     filename_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -42,10 +63,26 @@ def save_signal(
     return path
 
 
-def load_signal(filepath: str):
+def load_signal(filepath: str) -> Tuple[np.ndarray, float]:
     """
     Robust loader for .npz files.
-    Returns: (signal, fs)
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the .npz file.
+
+    Returns
+    -------
+    Tuple[np.ndarray, float]
+        (signal, fs) where signal is the data array and fs is the sampling rate.
+
+    Raises
+    ------
+    SystemExit
+        If the file is not found.
+    KeyError
+        If 'signal' or 'data' keys are missing in the archive.
     """
     try:
         with np.load(filepath) as archive:
@@ -69,8 +106,20 @@ def load_signal(filepath: str):
         sys.exit(1)
 
 
-def select_file_cli(directory: str) -> str:
-    """CLI menu to select a file from a directory."""
+def select_file_cli(directory: str) -> Optional[str]:
+    """
+    CLI menu to select a file from a directory.
+
+    Parameters
+    ----------
+    directory : str
+        The directory to list files from.
+
+    Returns
+    -------
+    Optional[str]
+        The full path of the selected file, or None if selection failed or canceled.
+    """
     if not os.path.exists(directory):
         print(f"Directory {directory} does not exist.")
         return None
@@ -93,8 +142,17 @@ def select_file_cli(directory: str) -> str:
 
 def scan_metadata(directory: str) -> pd.DataFrame:
     """
-    Recursively scans a directory for .npz files and extracts their metadata
-    into a Pandas DataFrame.
+    Recursively scans a directory for .npz files and extracts their metadata.
+
+    Parameters
+    ----------
+    directory : str
+        Root directory to scan.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing metadata for all found files.
     """
     records = []
     # Walk through the data directory recursively
@@ -106,7 +164,7 @@ def scan_metadata(directory: str) -> pd.DataFrame:
             try:
                 with np.load(filepath) as archive:
                     # Start with the filename
-                    row = {"filename": filename}
+                    row: dict[str, Any] = {"filename": filename}
                     # Loop through all keys in the file
                     for key in archive.files:
                         # Skip the heavy raw data
@@ -133,8 +191,24 @@ def scan_metadata(directory: str) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-def load_latest_file(directory: str, pattern: str = "*.npz"):
-    """Finds and loads the most recent file matching a pattern."""
+def load_latest_file(
+    directory: str, pattern: str = "*.npz"
+) -> Tuple[Optional[np.ndarray], Optional[float]]:
+    """
+    Finds and loads the most recent file matching a pattern.
+
+    Parameters
+    ----------
+    directory : str
+        Directory to search.
+    pattern : str, optional
+        Glob pattern for files. Defaults to "*.npz".
+
+    Returns
+    -------
+    Tuple[Optional[np.ndarray], Optional[float]]
+        (signal, fs) if found, else (None, None).
+    """
     search_path = os.path.join(directory, pattern)
     files = glob.glob(search_path)
     if not files:
