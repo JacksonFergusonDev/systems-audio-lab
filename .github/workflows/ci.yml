@@ -40,6 +40,9 @@ jobs:
         uv run ruff check .
         uv run ruff format --check .
 
+    - name: Type check with mypy
+      run: uv run mypy oscilloscope-rp2040
+
     - name: Run Tests
       run: uv run pytest
 

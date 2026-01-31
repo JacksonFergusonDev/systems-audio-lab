@@ -2,7 +2,8 @@ import glob
 import os
 import sys
 from datetime import datetime
-from typing import Any, Optional, Tuple
+from pathlib import Path
+from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -63,7 +64,7 @@ def save_signal(
     return path
 
 
-def load_signal(filepath: str) -> Tuple[np.ndarray, float]:
+def load_signal(filepath: Union[str, Path]) -> Tuple[np.ndarray, float]:
     """
     Robust loader for .npz files.
 
