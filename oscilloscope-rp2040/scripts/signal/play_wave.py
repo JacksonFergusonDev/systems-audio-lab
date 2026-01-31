@@ -1,21 +1,36 @@
+"""
+Script to generate a continuous waveform and visualize it in real-time.
+
+This script creates a software oscillator (sine, square, etc.), plays it
+through the system audio, and streams the loopback/output capture from
+the DAQ to a live oscilloscope window.
+"""
+
 import os
 import sys
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import audio, daq, viz
+from src import audio, daq, viz  # noqa: E402
 
 # Configuration
-SHAPE = "sine"  # "sine", "triangle", "square", "saw"
-FREQ_HZ = 440.0  # Frequency
-AMPLITUDE = 0.5  # 0.0 to 1.0 (Watch your volume!)
+SHAPE: str = "sine"  # Options: "sine", "triangle", "square", "saw"
+FREQ_HZ: float = 440.0  # Frequency in Hz
+AMPLITUDE: float = 0.5  # Peak amplitude (0.0 to 1.0)
 
 
-def main():
+def main() -> None:
+    """
+    Main execution entry point.
+
+    Sets up the oscillator and the DAQ interface, then launches the
+    live scope. The audio playback is triggered via the `on_launch`
+    callback to ensure it starts only when the visualizer is ready.
+    """
     print(f"Initializing {SHAPE} wave at {FREQ_HZ}Hz...")
 
-    # 1. Init Audio (auto_start=False means it waits)
+    # 1. Init Audio (auto_start=False means it waits for the scope)
     with audio.ContinuousOscillator(SHAPE, FREQ_HZ, AMPLITUDE, auto_start=False) as osc:
         # 2. Start Scope
         with daq.DAQInterface() as device:

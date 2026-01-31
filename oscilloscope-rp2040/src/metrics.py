@@ -10,19 +10,41 @@ from . import dsp
 def calculate_gain_metrics(
     sig_clean: np.ndarray, sig_dirty: np.ndarray, duration_ms: float, fs: float
 ) -> Dict[str, Any]:
-    """Computes Vpp gain and identifies the peak gain region."""
+    """
+    Computes Vpp gain and identifies the peak gain region.
+
+    Parameters
+    ----------
+    sig_clean : np.ndarray
+        The input (reference) signal.
+    sig_dirty : np.ndarray
+        The output (distorted) signal.
+    duration_ms : float
+        Analysis window duration in milliseconds.
+    fs : float
+        Sampling rate in Hz.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing time axis, triggered signals, Vpp measurements,
+        calculated gain in dB, and peak coordinates.
+    """
     samples = int((duration_ms / 1000) * fs)
     t = (np.arange(samples) / fs) * 1000
 
+    # Align signals using software trigger
     trig_c = dsp.software_trigger(sig_clean, threshold=0)[:samples]
     trig_d = dsp.software_trigger(sig_dirty, threshold=0)[:samples]
 
     vpp_c = np.max(trig_c) - np.min(trig_c)
     vpp_d = np.max(trig_d) - np.min(trig_d)
 
+    # Calculate Gain
     gain_linear = vpp_d / vpp_c if vpp_c > 1e-6 else 0.0
     gain_db = 20 * np.log10(gain_linear) if gain_linear > 0 else 0.0
 
+    # Find Peak Gain coordinates (focus on 6ms +/- 1ms window)
     x0 = 6.0
     win_ms = 1.0
     mask = (t >= x0 - win_ms) & (t <= x0 + win_ms)
@@ -48,7 +70,14 @@ def calculate_gain_metrics(
 def compute_spectrum_data(
     signal: np.ndarray, fs: float
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Simple wrapper for DSP spectrum to keep metrics generic."""
+    """
+    Wrapper for dsp.compute_spectrum to keep metrics generic.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray]
+        (freq_axis, magnitude)
+    """
     return dsp.compute_spectrum(dsp.remove_dc(signal), fs)
 
 
@@ -56,18 +85,30 @@ def compute_bode_data_broken(
     sig_src: np.ndarray, sig_dut: np.ndarray, fs: float
 ) -> Dict[str, Any]:
     """
-    Derives the System Transfer Function H(f) using the H1 Estimator method
-    (Cross-Spectral Density / Power Spectral Density).
+    Derives the System Transfer Function H(f) using the H1 Estimator method.
 
-    This is robust against noise and spectral leakage, unlike simple FFT division.
+    Calculates H1 = Pxy / Pxx (Cross-Spectral Density / Power Spectral Density).
+    This method is robust against noise but sensitive to non-linearities.
+
+    Parameters
+    ----------
+    sig_src : np.ndarray
+        Source/Input signal.
+    sig_dut : np.ndarray
+        DUT/Output signal.
+    fs : float
+        Sampling rate in Hz.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing frequencies, gain (dB), coherence, and peak metrics.
     """
-    # 1. Alignment (CRITICAL for Transfer Function estimation)
-    # We treat the DUT as the target and align it to the Source
-    # Normalize for alignment correlation
+    # 1. Alignment (Critical for phase correlation)
+    # Normalize for correlation calculation
     norm_src = sig_src / np.max(np.abs(sig_src))
     norm_dut = sig_dut / np.max(np.abs(sig_dut))
 
-    # Calculate lag
     correlation = spsig.correlate(norm_dut, norm_src, mode="full")
     lags = spsig.correlation_lags(norm_dut.size, norm_src.size, mode="full")
     lag = lags[np.argmax(correlation)]
@@ -80,48 +121,41 @@ def compute_bode_data_broken(
         sig_src_aligned = sig_src[-lag:]
         sig_dut_aligned = sig_dut[: len(sig_src_aligned)]
 
-    # Ensure equal length
+    # Truncate to matching length
     n = min(len(sig_src_aligned), len(sig_dut_aligned))
     x = sig_src_aligned[:n]
     y = sig_dut_aligned[:n]
 
     # 2. Compute Estimators (Welch's Method)
-    # nperseg controls frequency resolution vs. time averaging
-    # 4096 gives ~23Hz resolution at 96kHz, decent for audio
+    # 4096 samples gives ~23Hz resolution at 96kHz
     nperseg = 4096
 
     # Pxx: Power Spectral Density of Input
     f, Pxx = spsig.welch(x, fs, nperseg=nperseg)
-
-    # Pxy: Cross Spectral Density (Input vs Output)
+    # Pxy: Cross Spectral Density
     _, Pxy = spsig.csd(x, y, fs, nperseg=nperseg)
-
-    # Cxy: Coherence (Reliability metric, 0 to 1)
+    # Cxy: Coherence (0 to 1 reliability metric)
     _, Cxy = spsig.coherence(x, y, fs, nperseg=nperseg)
 
     # 3. Calculate H1 Transfer Function
-    # H1 = Pxy / Pxx
     H = Pxy / Pxx
+    gain_db = 20 * np.log10(np.abs(H) + 1e-9)
 
-    # Magnitude in dB
-    gain_db = 20 * np.log10(np.abs(H) + 1e-9)  # epsilon to prevent -inf
-
-    # 4. Smoothing (Optional but nice for Bode plots)
-    # Apply a small moving average to clean up the plot lines
+    # 4. Smoothing
     window_size = 5
     gain_smooth = np.convolve(gain_db, np.ones(window_size) / window_size, mode="same")
     coherence_smooth = np.convolve(Cxy, np.ones(window_size) / window_size, mode="same")
 
-    # Find Peak (only consider valid frequencies > 20Hz)
+    # Find Peak (valid frequencies > 20Hz only)
     valid_mask = (f > 20) & (f < 20000)
     max_idx = np.argmax(gain_smooth[valid_mask])
-    # adjusting index for the mask
+    # Adjust index relative to full array
     real_idx = np.where(valid_mask)[0][max_idx]
 
     return {
         "freqs": f,
         "gain_db": gain_smooth,
-        "coherence": coherence_smooth,  # Export coherence to visualize trust
+        "coherence": coherence_smooth,
         "peak_db": float(gain_smooth[real_idx]),
         "peak_freq": float(f[real_idx]),
     }
@@ -130,7 +164,14 @@ def compute_bode_data_broken(
 def prepare_transfer_curve(
     sig_src: np.ndarray, sig_dut: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Normalizes and phase-aligns signals for XY plotting."""
+    """
+    Normalizes and phase-aligns signals for XY transfer curve plotting.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray]
+        (aligned_source, aligned_dut) normalized to 1.0.
+    """
     norm_src = sig_src / np.max(np.abs(sig_src))
     norm_dut = sig_dut / np.max(np.abs(sig_dut))
     aligned_src = dsp.smart_align(norm_dut, norm_src)
@@ -141,7 +182,26 @@ def prepare_transfer_curve(
 def extract_harmonics_list(
     signal: np.ndarray, fs: float, fundamental_freq: float, n_harmonics: int = 10
 ) -> Optional[pd.DataFrame]:
-    """Extracts magnitude of first N harmonics."""
+    """
+    Extracts magnitude relative to fundamental for the first N harmonics.
+
+    Parameters
+    ----------
+    signal : np.ndarray
+        Input signal.
+    fs : float
+        Sampling rate.
+    fundamental_freq : float
+        Base frequency to search for.
+    n_harmonics : int
+        Number of harmonics to extract.
+
+    Returns
+    -------
+    Optional[pd.DataFrame]
+        DataFrame with columns [Harmonic, Order, Magnitude, Type], or None if
+        fundamental is missing.
+    """
     freqs, mags = dsp.compute_spectrum(signal, fs)
     window = 10
 
@@ -174,7 +234,14 @@ def extract_harmonics_list(
 def compute_normalized_spectra(
     sig_clean: np.ndarray, sig_dirty: np.ndarray, fs: float
 ) -> Dict[str, np.ndarray]:
-    """Computes Peak-Normalized spectra (Peak = 1.0)."""
+    """
+    Computes spectra for two signals, normalized to Peak=1.0.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Keys: 'freqs_c', 'mags_c', 'freqs_d', 'mags_d'
+    """
     f_c, m_c = dsp.compute_spectrum(sig_clean, fs)
     f_d, m_d = dsp.compute_spectrum(sig_dirty, fs)
 
@@ -189,7 +256,14 @@ def compute_normalized_spectra(
 def compute_spectral_comparison(
     sig_clean: np.ndarray, sig_dirty: np.ndarray, fs: float, fundamental: float = 82.4
 ) -> Optional[pd.DataFrame]:
-    """Generates comparative harmonics DataFrame."""
+    """
+    Generates a comparative DataFrame of harmonic magnitudes for two signals.
+
+    Returns
+    -------
+    Optional[pd.DataFrame]
+        Combined DataFrame labeled by 'Signal' source, or None if extraction fails.
+    """
     df_c = extract_harmonics_list(sig_clean, fs, fundamental, n_harmonics=6)
     df_d = extract_harmonics_list(sig_dirty, fs, fundamental, n_harmonics=6)
 
@@ -206,7 +280,14 @@ def generate_inverse_filter(
 ) -> np.ndarray:
     """
     Generates the Inverse Filter for a Logarithmic Sine Sweep (Farina 2000).
-    Corrects the 3dB/octave slope (Pink -> White).
+
+    This filter corrects the -3dB/octave slope of the log sweep (Pink Noise profile)
+    to a flat White Noise profile during deconvolution.
+
+    Returns
+    -------
+    np.ndarray
+        The time-reversed, amplitude-weighted inverse sweep.
     """
     n = int(round(duration * fs))
     t = np.arange(n, dtype=np.float64) / fs
@@ -218,20 +299,15 @@ def generate_inverse_filter(
     sweep = np.sin(phase)
 
     # 2. Generate Amplitude Envelope (Blue Noise Slope)
-    # Grows with time because freq grows with time in the sweep.
-    # We apply this BEFORE reversing to boost the high frequencies.
+    # Corrects pink noise spectrum of log sweep.
     w = np.exp(t * np.log(R) / duration)
 
-    # 3. Create Inverse (Time Reverse the WEIGHTED sweep)
-    # The sweep goes Low->High. w goes Low->High.
-    # sweep*w is Low(attenuated)->High(boosted).
-    # flipping it puts High(boosted) at the start.
+    # 3. Create Inverse
+    # Time reverse the weighted sweep to place high frequencies at the start.
     inv_filter = np.flip(sweep * w)
-
-    # Normalize energy
     inv_filter /= np.max(np.abs(inv_filter))
 
-    return inv_filter
+    return inv_filter  # type: ignore[no-any-return]
 
 
 def compute_impulse_response(
@@ -243,29 +319,50 @@ def compute_impulse_response(
 ) -> Tuple[np.ndarray, int]:
     """
     Performs Deconvolution to extract the Linear Impulse Response (IR).
+
+    Uses FFT convolution with the analytic inverse of the log sine sweep.
+
+    Returns
+    -------
+    Tuple[np.ndarray, int]
+        (impulse_response, peak_index)
     """
     inv_filter = generate_inverse_filter(f_start, f_end, duration, fs)
 
-    # FFT Convolution (much faster than time domain)
+    # FFT Convolution (faster than time domain)
     ir_raw = spsig.fftconvolve(sig_dut, inv_filter, mode="full")
 
     # Robust Peak Finding
-    # The Linear Impulse is the LAST major event in the deconvolved signal.
-    # Harmonic distortion peaks appear EARLIER (negative time).
-    # We search the second half of the buffer to avoid initial transients.
+    # Search second half to avoid initial transients/harmonic distortion.
     search_start = len(ir_raw) // 2
     peak_idx_local = np.argmax(np.abs(ir_raw[search_start:]))
     peak_idx = search_start + peak_idx_local
 
-    return ir_raw, peak_idx
+    return ir_raw, int(peak_idx)
 
 
 def compute_bode_data(
     sig_src: np.ndarray, sig_dut: np.ndarray, fs: float
 ) -> Dict[str, Any]:
     """
-    Derives the Linear Frequency Response using ESS Deconvolution with
-    Asymmetric (Causal) Windowing.
+    Derives the Linear Frequency Response using ESS Deconvolution.
+
+    Applies Farina's method with asymmetric windowing to separate the linear
+    impulse response from harmonic distortion products.
+
+    Parameters
+    ----------
+    sig_src : np.ndarray
+        Unused in this method (implied by sweep parameters), kept for API consistency.
+    sig_dut : np.ndarray
+        Recorded sweep response from DUT.
+    fs : float
+        Sampling rate in Hz.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing frequency response, peak metrics, and IR preview.
     """
     F_START = 20.0
     F_END = 20000.0
@@ -275,10 +372,10 @@ def compute_bode_data(
     ir, peak_idx = compute_impulse_response(sig_dut, fs, F_START, F_END, DURATION)
 
     # 2. Asymmetric Windowing (The "Farina Cut")
-    # Pre-peak: Very short (to exclude harmonic pre-echoes)
-    # Post-peak: Longer (to capture bass decay)
-    pre_window_ms = 2.0  # 2ms before peak (excludes harmonics)
-    post_window_ms = 50.0  # 50ms after peak (captures body)
+    # Pre-peak: Short (excludes harmonic pre-echoes)
+    # Post-peak: Long (captures bass decay/room response)
+    pre_window_ms = 2.0
+    post_window_ms = 50.0
 
     pre_samples = int((pre_window_ms / 1000) * fs)
     post_samples = int((post_window_ms / 1000) * fs)
@@ -288,12 +385,9 @@ def compute_bode_data(
 
     ir_linear = ir[start:end]
 
-    # Apply Hann window only to the edges to avoid spectral leakage
-    # We construct a custom window:
-    # 1. Fast fade-in (pre-peak)
-    # 2. Slow fade-out (post-peak)
+    # Apply Tukey window to edges to prevent leakage
     win_len = len(ir_linear)
-    window = spsig.windows.tukey(win_len, alpha=0.1)  # Flat top, cosine taper edges
+    window = spsig.windows.tukey(win_len, alpha=0.1)
     ir_windowed = ir_linear * window
 
     # 3. FFT
@@ -317,14 +411,14 @@ def compute_bode_data(
     peak_db = np.max(gain_smooth)
     peak_freq = f_axis[np.argmax(gain_smooth)]
 
-    # Correct IR Time Axis for plotting (Relative to Peak)
+    # IR Time Axis (Relative to Peak)
     t_ir = (np.arange(len(ir_linear)) - pre_samples) / fs * 1000
 
     return {
         "freqs": f_axis,
         "gain_db": gain_smooth,
-        "peak_db": peak_db,
-        "peak_freq": peak_freq,
-        "ir_preview": ir_linear,  # The sliced linear IR
-        "ir_time_ms": t_ir,  # The corrected time axis
+        "peak_db": float(peak_db),
+        "peak_freq": float(peak_freq),
+        "ir_preview": ir_linear,
+        "ir_time_ms": t_ir,
     }

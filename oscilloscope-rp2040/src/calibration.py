@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,9 +10,17 @@ from scipy.signal import windows
 from . import config, daq, dsp
 
 
-def save_calibration(fs: float):
+def save_calibration(fs: float) -> None:
     """
-    Saves the calibrated FS to data/calibration.json
+    Saves the calibrated sampling rate to the calibration JSON file.
+
+    Creates the parent directory for the calibration file if it does not exist.
+    The file will contain the sampling rate, a timestamp, and the hardware default.
+
+    Parameters
+    ----------
+    fs : float
+        The calculated true sampling rate in Hz.
     """
     # 1. Create data directory if it doesn't exist yet
     os.makedirs(os.path.dirname(config.CALIBRATION_FILE_PATH), exist_ok=True)
@@ -29,9 +38,15 @@ def save_calibration(fs: float):
     print(f"💾 Calibration saved to {config.CALIBRATION_FILE_PATH}")
 
 
-def load_calibration():
+def load_calibration() -> Optional[float]:
     """
-    Tries to load FS from data/calibration.json
+    Attempts to load a previously saved sampling rate from disk.
+
+    Returns
+    -------
+    Optional[float]
+        The cached sampling rate in Hz if the file exists and is valid.
+        Returns None if the file is missing or corrupted.
     """
     if not os.path.exists(config.CALIBRATION_FILE_PATH):
         return None
@@ -43,17 +58,35 @@ def load_calibration():
         fs = data.get("fs")
         date = data.get("date_str", "unknown date")
         print(f"📂 Loaded cached calibration: {fs:.1f} Hz ({date})")
-        return fs
+        return float(fs)
 
     except Exception as e:
         print(f"⚠️ Could not load calibration: {e}")
         return None
 
 
-def calibrate_fs_robust(visualize=True):
+def calibrate_fs_robust(visualize: bool = True) -> float:
     """
-    Captures a burst and analyzes the 60Hz mains hum to calculate
-    the true sampling rate (FS).
+    Calculates the true sampling rate by analyzing 60Hz mains hum.
+
+    This function captures a burst of data, identifying the mains frequency
+    assuming the user is touching the input jack. It uses a weighted average
+    of FFT bins around the peak for sub-bin precision.
+
+    Parameters
+    ----------
+    visualize : bool, optional
+
+        If True, plots the first few cycles of the
+        captured signal for visual verification.
+
+        Default is True.
+
+    Returns
+    -------
+    float
+        The calculated real sampling rate in Hz.
+        Returns config.FS_DEFAULT if calibration fails or SNR is too low.
     """
     print("👉 TOUCH JACK TIP NOW for 60Hz Calibration...")
 
@@ -77,7 +110,9 @@ def calibrate_fs_robust(visualize=True):
 
         # 5. Calculate SNR (exclude 10 bins around peak)
         noise_mask = np.ones(len(fft_mag), dtype=bool)
-        noise_mask[max(0, peak_idx - 5) : min(len(fft_mag), peak_idx + 5)] = False
+        noise_mask[max(0, int(peak_idx) - 5) : min(len(fft_mag), int(peak_idx) + 5)] = (
+            False
+        )
         noise_floor = np.mean(fft_mag[noise_mask])
 
         snr = peak_mag / noise_floor if noise_floor > 0 else 0
@@ -87,7 +122,7 @@ def calibrate_fs_robust(visualize=True):
 
         if snr < 10:
             print("❌ WARNING: Signal too weak! Touch the jack firmly.")
-            return config.FS_DEFAULT
+            return float(config.FS_DEFAULT)
 
         # 6. Weighted Average for Precision
         win_idxs = np.arange(peak_idx - 2, peak_idx + 3)
@@ -110,8 +145,8 @@ def calibrate_fs_robust(visualize=True):
             plt.grid(True, alpha=0.3)
             plt.show()
 
-        return real_fs
+        return float(real_fs)
 
     except Exception as e:
         print(f"❌ Calibration Failed: {e}")
-        return config.FS_DEFAULT
+        return float(config.FS_DEFAULT)

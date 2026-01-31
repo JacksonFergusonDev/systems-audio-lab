@@ -1,13 +1,28 @@
+from typing import Any, Dict, Tuple, cast
+
 import numpy as np
 from scipy.signal import find_peaks
 
 from . import config, dsp
 
 
-def check_signal_health(voltages: np.ndarray):
+def check_signal_health(voltages: np.ndarray) -> bool:
     """
-    Analyzes signal for clipping, silence, and bias drift.
-    Returns: is_healthy (bool)
+    Analyzes the signal for clipping, silence, and bias drift.
+
+    Prints a diagnostic report to the console regarding DC offset,
+    peak-to-peak swing, and potential health warnings.
+
+    Parameters
+    ----------
+    voltages : np.ndarray
+        (N,) array of signal voltages (float).
+
+    Returns
+    -------
+    bool
+        True if the signal is considered "healthy" (no clipping,
+        adequate amplitude, valid bias). False otherwise.
     """
     v_min = np.min(voltages)
     v_max = np.max(voltages)
@@ -37,10 +52,22 @@ def check_signal_health(voltages: np.ndarray):
     return is_healthy
 
 
-def analyze_spectrum_peaks(voltages: np.ndarray, fs: float):
+def analyze_spectrum_peaks(voltages: np.ndarray, fs: float) -> Tuple[float, np.ndarray]:
     """
-    Performs a frequency domain sanity check.
-    Returns: (dominant_freq, harmonics_list)
+    Performs a frequency domain sanity check by identifying dominant peaks.
+
+    Parameters
+    ----------
+    voltages : np.ndarray
+        (N,) array of signal voltages.
+    fs : float
+        Sampling rate in Hz.
+
+    Returns
+    -------
+    Tuple[float, np.ndarray]
+        - dominant_freq: The frequency of the highest magnitude peak in Hz.
+        - top_freqs: Array of the top 5 frequency peaks found, sorted by magnitude.
     """
     # 1. AC Couple
     ac_signal = dsp.remove_dc(voltages)
@@ -54,11 +81,12 @@ def analyze_spectrum_peaks(voltages: np.ndarray, fs: float):
     peaks_idx, props = find_peaks(mags, height=height_thresh, distance=50)
 
     # Sort by height (loudest first)
-    sorted_indices = peaks_idx[np.argsort(props["peak_heights"])[::-1]]
+    props_dict = cast(Dict[str, Any], props)
+    sorted_indices = peaks_idx[np.argsort(props_dict["peak_heights"])[::-1]]
     top_indices = sorted_indices[:5]
     top_freqs = freqs[top_indices]
 
-    dominant_freq = top_freqs[0] if len(top_freqs) > 0 else 0.0
+    dominant_freq = float(top_freqs[0]) if len(top_freqs) > 0 else 0.0
 
     # Print Report
     print(f"🎸 PITCH CHECK: {dominant_freq:.1f} Hz (Dominant)")
