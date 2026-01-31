@@ -1,16 +1,28 @@
+"""
+Script to generate a Ridgeline/Joyplot visualization from a signal file.
+
+This script parses command-line arguments to customize the rendering of a
+stacked line plot (Joyplot).
+"""
+
 import argparse
 import os
 import sys
 
-import numpy as np
-
 # Add project root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from src import plots
+from src import io, plots  # noqa: E402
 
 
-def main():
+def main() -> None:
+    """
+    Main execution entry point.
+
+    Parses CLI arguments for input file, styling options (lines, zoom, scale),
+    and output path. Loads the signal using the project's standard IO module
+    and delegates rendering to `src.plots.plot_joyplot_stacked`.
+    """
     parser = argparse.ArgumentParser(
         description="Generate a Joyplot/Ridgeline plot from audio data."
     )
@@ -27,22 +39,18 @@ def main():
 
     args = parser.parse_args()
 
-    try:
-        data_file = np.load(args.input)
-        signal = (
-            data_file["data"] if "data" in data_file else data_file[data_file.files[0]]
-        )
+    # Load signal using the standard project loader
+    # io.load_signal handles FileNotFoundError and legacy formats internally
+    signal, _ = io.load_signal(args.input)
 
-        plots.plot_joyplot_stacked(
-            signal,
-            lines=args.lines,
-            decimate=args.decimate,
-            x_zoom=args.zoom,
-            wave_scale=args.scale,
-            output_file=args.output,
-        )
-    except FileNotFoundError:
-        print(f"Error: Could not find {args.input}")
+    plots.plot_joyplot_stacked(
+        signal,
+        lines=args.lines,
+        decimate=args.decimate,
+        x_zoom=int(args.zoom),
+        wave_scale=args.scale,
+        output_file=args.output,
+    )
 
 
 if __name__ == "__main__":
