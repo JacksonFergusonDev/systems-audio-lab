@@ -51,9 +51,11 @@ testpaths = [
     "oscilloscope-rp2040/tests",
 ]
 
-pythonpath = [
-    "oscilloscope-rp2040/src",
-]
+pythonpath = ["oscilloscope-rp2040"]
+
+[tool.setuptools.packages.find]
+where = ["oscilloscope-rp2040"]
+include = ["sysaudio*"]
 
 [tool.mypy]
 mypy_path = "oscilloscope-rp2040"
