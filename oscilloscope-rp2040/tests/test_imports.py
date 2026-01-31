@@ -5,8 +5,13 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 
-def test_can_import_package():
-    """Ensures the dependency graph is acyclic and src can be imported."""
+def test_can_import_package() -> None:
+    """
+    Ensures the dependency graph is acyclic and src can be imported.
+
+    This test verifies that the package structure is valid and that
+    no circular imports prevent the root package from initializing.
+    """
     import src
 
     # If we got here, __init__.py ran successfully
