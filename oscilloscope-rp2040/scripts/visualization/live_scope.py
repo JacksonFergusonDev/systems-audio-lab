@@ -9,6 +9,7 @@ It serves as the foundational example for real-time plotting in this project.
 import os
 import sys
 import time
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 
@@ -32,7 +33,7 @@ def main() -> None:
     # This renders the static elements (grid, axes) once and caches them.
     plt.show(block=False)
     fig.canvas.draw()
-    background = fig.canvas.copy_from_bbox(ax.bbox)
+    background = cast(Any, fig.canvas).copy_from_bbox(ax.bbox)
 
     frame_count: int = 0
     last_fps_time: float = time.time()
@@ -51,7 +52,7 @@ def main() -> None:
 
                 # 2. Update Plot (Blitting)
                 # Restore the clean background
-                fig.canvas.restore_region(background)
+                cast(Any, fig.canvas).restore_region(background)
                 # Update line data
                 line.set_ydata(stable_wave)
                 # Redraw only the dynamic artists

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 import matplotlib.colors as mcolors
+import matplotlib.figure as mf
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,7 +24,7 @@ COLORS: Dict[str, str] = {
 }
 
 
-def save_pdf_svg(fig: plt.Figure, savepath: Union[str, Path], **kwargs: Any) -> None:
+def save_pdf_svg(fig: mf.Figure, savepath: Union[str, Path], **kwargs: Any) -> None:
     """
     Helper to save a figure in both PDF and SVG formats.
 
@@ -593,8 +594,7 @@ def plot_joyplot_stacked(
             fill_color = (fill_rgb[0], fill_rgb[1], fill_rgb[2], 1.0)
             fill_alpha = alpha
         else:
-            fill_color = FILL_COLOR
-            fill_alpha = 1.0  # type: ignore
+            fill_color = to_rgba(FILL_COLOR)
 
         ax.fill_between(
             x, y_base, y_curve, color=fill_color, zorder=i, alpha=fill_alpha
@@ -643,8 +643,10 @@ def plot_phase_portrait(
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
     # Create a color map based on time (0 to 1)
-    norm = plt.Normalize(0, len(x))
-    lc = LineCollection(segments, cmap="cool", norm=norm, alpha=0.3, linewidth=1.0)
+    norm = mcolors.Normalize(0, len(x))
+    lc = LineCollection(
+        list(segments), cmap="cool", norm=norm, alpha=0.3, linewidth=1.0
+    )
     lc.set_array(np.arange(len(x)))
 
     ax.add_collection(lc)

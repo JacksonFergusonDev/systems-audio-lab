@@ -1,5 +1,5 @@
 import time
-from typing import Any, Callable, Iterable, Optional, Tuple
+from typing import Any, Callable, Iterable, Optional, Tuple, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -80,7 +80,7 @@ def run_live_scope(
     # 1. Render initial frame to establish window context
     plt.show(block=False)
     fig.canvas.draw()
-    background = fig.canvas.copy_from_bbox(ax.bbox)
+    background = cast(Any, fig.canvas).copy_from_bbox(ax.bbox)
 
     # 2. Flush events to force window visibility before processing data
     fig.canvas.flush_events()
@@ -110,7 +110,7 @@ def run_live_scope(
             stable_wave = dsp.software_trigger(voltages)
 
             # Blitting Update (Redraw only the line, not the grid)
-            fig.canvas.restore_region(background)
+            cast(Any, fig.canvas).restore_region(background)
             line.set_ydata(stable_wave)
             ax.draw_artist(line)
 
@@ -173,7 +173,7 @@ def run_playback_scope(
     # Pre-calc background for blitting
     plt.show(block=False)
     fig.canvas.draw()
-    background = fig.canvas.copy_from_bbox(ax.bbox)
+    background = cast(Any, fig.canvas).copy_from_bbox(ax.bbox)
 
     start_time = time.time()
 
@@ -196,7 +196,7 @@ def run_playback_scope(
             stabilized = dsp.software_trigger(voltages)
 
             # Update Plot
-            fig.canvas.restore_region(background)
+            cast(Any, fig.canvas).restore_region(background)
             line.set_ydata(stabilized)
             ax.draw_artist(line)
 
