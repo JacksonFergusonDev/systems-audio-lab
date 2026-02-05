@@ -4,7 +4,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue.svg)
 ![Hardware](https://img.shields.io/badge/Hardware-RP2040-red.svg)
-![Hardware Status](https://img.shields.io/badge/Hardware-Validated-success.svg)
+![Version](https://img.shields.io/badge/Version-v1.0_Prototype-orange.svg)
 ![Analysis Status](https://img.shields.io/badge/Analysis-In_Progress-yellow.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
@@ -12,12 +12,18 @@ A complete electronics workbench built from scratch to measure and analyze audio
 
 This repository documents the full process from component ordering through frequency response analysis, spanning software logistics, power regulation, embedded firmware, and signal processing.
 
+> **Prototype Status: v1.0**
+>
+> This repository documents the **Proof-of-Concept** phase. The system is fully functional using discrete subsystems and perfboard construction.
+>
+> *For the upcoming integrated PCB design and automated measurement features, please see the [Future Roadmap (v2.0)](#-future-roadmap-silicon-revision-v20) at the bottom of this document.*
+
 ### 📄 [Read the Full Engineering Report (PDF)](docs/systems_audio_tech_report.pdf)
 *A detailed technical report covering the design process, thermal analysis, and measurement validation.*
 
 ---
 
-## 🚧 Current Status: Implementing Transfer Function Analysis
+## 🚧 Currently In Progress: Implementing Transfer Function Analysis
 
 Hardware and basic signal analysis are **complete and validated**. Transfer function analysis is under active development.
 
@@ -134,3 +140,51 @@ python oscilloscope-rp2040/scripts/capture/record.py
 │   └── procurement/           # Bills of Materials
 └── power-regulator-12v-to-9v/ # Linear Power Supply Design
 ```
+
+---
+
+## 🔮 Future Roadmap: Silicon Revision (v2.0)
+
+With the measurement chain validated, the next iteration focuses on precision and automation.
+
+**Current State:** The v1.0 oscilloscope uses perfboard construction with manual gain selection (jumpers) and relies on the RP2040's internal 12-bit ADC. This works for characterizing soft-clipping behavior but limits dynamic range for detailed harmonic measurements.
+
+**The Goal:** Design a custom PCB that replaces manual configuration with software control, enabling push-button transfer function analysis.
+
+### Planned Improvements
+
+**1. PCB Design & Shielding**
+* Transition from perfboard to a 4-layer board with dedicated ground planes for noise reduction.
+* Replace 0.1" headers with **BNC connectors** for compatibility with standard lab equipment.
+* Move to surface-mount components for tighter layout and reduced parasitic capacitance.
+
+**2. Signal Chain Upgrade**
+* **External ADC:** Replace the RP2040's 12-bit ADC with a 24-bit audio codec (e.g., I2S interface). This increases dynamic range for measuring low-level harmonics.
+* **On-board Signal Generator:** Add a DAC (e.g., PCM5102) to generate test signals directly from the hardware. This eliminates the dependency on external function generators and enables automated frequency sweeps.
+
+**3. Programmable Input Stage**
+* **Software-Controlled Gain:** Replace jumper-based gain selection with a programmable gain amplifier (PGA) or digitally-switched resistor networks.
+* **AC/DC Coupling:** Use relays to switch coupling modes without disturbing the signal path.
+* **Input Protection:** Add over-voltage protection to handle accidental connection to high-voltage rails.
+
+**4. Firmware & Analysis**
+* **DMA-Based Streaming:** Move from polled ADC reads to continuous DMA transfers for gapless data capture.
+* **Automated Characterization:** Implement one-click measurement routines that run a frequency sweep, perform ESS deconvolution, and generate Bode plots without manual intervention.
+
+This revision keeps the RP2040 core (its PIO and DMA capabilities are well-suited for high-speed I/O) but builds a proper analog front-end around it, turning the prototype into a bench instrument.
+
+---
+
+## 📧 Contact
+
+**Jackson Ferguson**
+
+-   **GitHub:** [@JacksonFergusonDev](https://github.com/JacksonFergusonDev)
+-   **LinkedIn:** [Jackson Ferguson](https://www.linkedin.com/in/jackson--ferguson/)
+-   **Email:** jackson.ferguson0@gmail.com
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

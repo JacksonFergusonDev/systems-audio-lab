@@ -659,18 +659,10 @@ The analytical phase (Chapter 6) provided quantitative validation of the system'
     \end{itemize}
 \end{enumerate}
 
-\section{Future Work \& Optimization}
-While the current implementation is functional, specific avenues for optimization have been identified:
-\begin{itemize}
-  \item \textbf{Automated THD Profiling:} The current analysis relies on burst capture of manual instrument input. A future revision of the DAQ firmware should implement a DAC-driven sine sweep to automatically plot Total Harmonic Distortion (THD) vs. Frequency.\cite{sonarworks_distortion_even_odd}
-  \item \textbf{DMA Integration:} Migrating the acquisition loop from CPU-driven polling to Direct Memory Access (DMA) would eliminate jitter and potentially double the sampling rate to $\approx 200\text{--}500\,\text{kSps}$.\cite{rpi_pico_examples_dma_capture,rpi_rp2040_datasheet}
-  \item \textbf{Logistics Integration:} The \textbf{Star Ground} engine could be extended to track component "freshness," flagging parts that have been in storage long enough to risk lead oxidation.
-\end{itemize}
-
 \section{Phase II: Active Signal Injection (In Progress)}
 Current characterization has relied on passive burst capture of organic instrument input. To achieve laboratory-grade transfer function plotting, the project is currently transitioning to an \textbf{Active Signal Injection} phase.
 
-A custom "Host-to-Device" interface is under development, utilizing the host laptop's High-Definition Audio DAC as a signal generator.
+A custom Host-to-Device interface is under development, utilizing the host laptop's High-Definition Audio DAC as a signal generator.
 \begin{itemize}
   \item \textbf{Hardware Interface:} A custom impedance-matching cable (Aux TRS $\to$ Mono TS) has been fabricated to bridge the consumer line-level output of the host to the high-impedance instrument input of the DUT.
   \item \textbf{Software Generation:} A Python-based Direct Digital Synthesis (DDS) engine has been written to generate precise sine sweeps (20Hz--20kHz) and step functions.
@@ -678,8 +670,34 @@ A custom "Host-to-Device" interface is under development, utilizing the host lap
 
 This upgrade will allow for the automation of Bode plotting and Total Harmonic Distortion (THD) sweeping in the next revision of this technical report.
 
-\section{Final Remarks}
-The \textbf{Red Llama} project stands as a proof-of-concept for the "Systems" approach to maker-electronics. By refusing to treat the supply chain, power delivery, and validation as externalities, the project yielded a device with a verified noise floor and a mathematically characterized distortion profile. This journey confirms that for the modern engineer, the distinction between code and silicon is increasingly arbitrary; both are simply distinct layers of the same stack.
+\section{Future Roadmap: The Silicon Revision (v2.0)}
+The current device, constructed on perfboard with discrete modules, serves as a validated prototype (v1.0). While effective for characterizing soft-clipping topologies, the reliance on the RP2040's internal 12-bit ADC and manual jumper configuration limits its utility as a precision laboratory standard.
+
+Based on the empirical data collected in this report, a comprehensive "Silicon Revision" (v2.0) is proposed to transition the system from a development tool to an autonomous measurement engine.
+
+\subsection{Hardware Architecture}
+The next iteration will migrate from modular sub-assemblies to a unified \textbf{4-layer PCB} utilizing Surface Mount Devices (SMD).
+\begin{itemize}
+  \item \textbf{Noise Floor:} A dedicated internal ground plane will replace the star-ground wiring to further suppress Electromagnetic Interference (EMI), targeting a noise floor of $<-80\text{dB}$.
+  \item \textbf{Connectivity:} Standard 0.1" headers will be replaced with shielded \textbf{BNC connectors} to interface with standard oscilloscope probes.
+\end{itemize}
+
+\subsection{Signal Chain Evolution}
+To achieve \textit{Audio Analyzer} grade performance, the internal data converters will be bypassed in favor of dedicated I2S codecs:
+\begin{itemize}
+  \item \textbf{Acquisition (ADC):} An external 24-bit I2S ADC (e.g., PCM1808) will replace the internal 12-bit converter. This will increase the dynamic range significantly, allowing for the resolution of harmonic distortion products currently buried in the quantization noise.
+  \item \textbf{Generation (DAC):} A high-resolution DAC (e.g., PCM5102) will be integrated directly onto the bus. This eliminates the dependency on the host laptop's sound card (described in Section 7.4) and allows the MCU to generate perfectly synchronized test tones for automated Bode plotting.
+\end{itemize}
+
+\subsection{Programmable Analog Front End (AFE)}
+The current manual configuration (physical jumpers for Gain and AC/DC coupling) introduces mechanical wear and prevents remote automation. The v2.0 AFE will utilize:
+\begin{itemize}
+  \item \textbf{Relay Switching:} To toggle between AC and DC coupling modes without signal degradation.
+  \item \textbf{Programmable Gain Amplifier (PGA):} To provide software-controlled attenuation, enabling the system to auto-range between millivolt-level guitar pickups and high-voltage modular synthesizer rails ($\pm 12\text{V}$).
+\end{itemize}
+
+\section{Closing Statement}
+The \textbf{Systems Audio Lab} project stands as a proof-of-concept for the \textit{systems} approach to maker-electronics. By refusing to treat the supply chain, power delivery, and validation as externalities, the project yielded a device with a verified noise floor and a mathematically characterized distortion profile. The proposed evolution to v2.0 demonstrates that the distinction between software code and silicon hardware is increasingly arbitrary; both are simply distinct layers of the same engineering stack.
 
 % =============================================================================
 % APPENDIX
@@ -694,11 +712,11 @@ The \textbf{Red Llama} project stands as a proof-of-concept for the "Systems" ap
 
 \section{Host: Calibration Algorithm}
 \textit{The weighted-average logic used to derive the true sample rate from mains hum (Ref. Chapter 5).}
-\lstinputlisting[language=Python, caption=src/calibration.py]{../oscilloscope-rp2040/src/calibration.py}
+\lstinputlisting[language=Python, caption=src/calibration.py]{../oscilloscope-rp2040/sysaudio/calibration.py}
 
 \section{Host: Signal Processing (DSP)}
 \textit{FFT windowing and THD calculation routines (Ref. Chapter 6).}
-\lstinputlisting[language=Python, caption=src/dsp.py]{../oscilloscope-rp2040/src/dsp.py}
+\lstinputlisting[language=Python, caption=src/dsp.py]{../oscilloscope-rp2040/sysaudio/dsp.py}
 
 \section{Host: Function Generator Logic (Phase II)}
 \textit{Core logic for the "Laptop-as-Generator" system, capable of generating frequency sweeps for future transfer function analysis.}
