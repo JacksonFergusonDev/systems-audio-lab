@@ -94,7 +94,7 @@ The scientific workbench.
 
 > *Full Bill of Materials with Tayda Electronics SKUs and pricing [available here](./schematics/README.md).*
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Firmware Flash
 Flash the RP2040 with MicroPython (v1.27+) and copy `firmware/main.py` to the root of the device.
@@ -125,3 +125,13 @@ Automated Transfer Function Capture:
 # Capture a 5-second log sweep for Bode plotting
 python oscilloscope-rp2040/scripts/capture/master_transfer.py sweep --duration 5 --amp 0.5
 ```
+
+---
+
+## Future Development
+
+This documentation describes the **v1.0 Prototype** architecture.
+
+Development has begun on **v2.0 ("The Silicon Revision")**, which will transition this logic from a perfboard prototype to an integrated PCBA with dedicated ADCs and DACs.
+
+**View the full [v2.0 Roadmap and Specification](../README.md#-future-roadmap-silicon-revision-v20) in the project root.**
