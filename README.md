@@ -1,6 +1,6 @@
 # ⚡ systems-audio-lab
 
-**From Python to Silicon**
+**A vertically integrated audio analysis platform.**
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue.svg)
 ![Hardware](https://img.shields.io/badge/Hardware-RP2040-red.svg)
@@ -8,22 +8,24 @@
 ![Analysis Status](https://img.shields.io/badge/Analysis-In_Progress-yellow.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-A complete electronics workbench built from scratch to measure and analyze audio circuits. Rather than buying test equipment, this project builds the entire measurement chain: a parts management system, clean power supply, test circuit, and custom oscilloscope.
+### 📡 The Mission: Vertical Integration
 
-This repository documents the full process from component ordering through frequency response analysis, spanning software logistics, power regulation, embedded firmware, and signal processing.
+Most audio analysis relies on "black box" equipment. This project builds the **entire signal chain** from scratch:
+1.  **Power:** A custom linear regulator to eliminate switching noise.
+2.  **Device:** A discrete CMOS overdrive circuit to generate soft-clipping distortion.
+3.  **Probe:** A custom RP2040 oscilloscope to capture the waveform.
+4.  **Analysis:** A Python pipeline to deconvolve the Transfer Function.
 
-> **Prototype Status: v1.0**
->
-> This repository documents the **Proof-of-Concept** phase. The system is fully functional using discrete subsystems and perfboard construction.
->
-> *For the upcoming integrated PCB design and automated measurement features, please see the [Future Roadmap (v2.0)](#-future-roadmap-silicon-revision-v20) at the bottom of this document.*
-
-### 📄 [Read the Full Engineering Report (PDF)](docs/systems_audio_tech_report.pdf)
-*A detailed technical report covering the design process, thermal analysis, and measurement validation.*
+By owning every stage of the pipeline, this system eliminates the "dependency hell" of unknown hardware variables, allowing for precise correlation between **circuit topology** and **spectral output**.
 
 ---
 
-## 🚧 Currently In Progress: Implementing Transfer Function Analysis
+### 📄 [Read the Full Engineering Report (PDF)](docs/systems_audio_tech_report.pdf)
+*A detailed technical report covering the full systems engineering approach: logistics automation, power supply design, analog circuit fabrication, and custom DAQ instrumentation for spectral validation.*
+
+---
+
+## 🚧 Currently In Progress: Transfer Function Deconvolution
 
 Hardware and basic signal analysis are **complete and validated**. Transfer function analysis is under active development.
 
@@ -32,38 +34,38 @@ Hardware and basic signal analysis are **complete and validated**. Transfer func
 
 ---
 
-## 🔬 Key Findings: Measuring "Tube Sound"
+## 🔬 Signal Analysis: Quantifying "Warmth"
 
 The primary goal was to test whether **CMOS inverter chips** (normally used for digital logic), when biased into their linear region, produce soft-clipping distortion similar to vacuum tubes.
 
 **The Results:**
-Using the custom RP2040 oscilloscope built for this project, I captured the saturation behavior of the Red Llama overdrive circuit.
+Using the custom RP2040 oscilloscope, I captured the saturation behavior of the Red Llama overdrive circuit.
 
 ![Topology Analysis](docs/figures/fig_analysis_topology.svg)
 
-1.  **Time Domain (Left):** Shows **"soft knee"** compression at the peaks. Unlike diodes which clip sharply, the CMOS chips round off the waveform smoothly.
-2.  **Frequency Domain (Right):** The spectrum shows a strong **2nd harmonic (one octave above fundamental)**. This even-order harmonic content is characteristic of what audio engineers call "warmth," consistent with tube-like behavior.
+1.  **Time Domain (Left):** Shows **"soft knee"** compression. Unlike diodes which clip sharply at $V_f$, the CMOS chips round off the waveform smoothly.
+2.  **Frequency Domain (Right):** The spectrum reveals a dominant **2nd harmonic** (one octave above fundamental). This even-order harmonic content is consistent with the "tube sound" hypothesis, mathematically validating the circuit design.
 
 ---
 
-## 🏗 The Complete System
+## 🏗 System Architecture
 
-This project consists of four interconnected subsystems, each one enabling the next.
+This project consists of four interconnected subsystems, each enabling the next.
 
 ### 1. [Logistics: Star Ground](https://github.com/JacksonFergusonDev/star-ground)
-* **The Problem:** Manually managing parts lists is error-prone and causes project delays when components are missing.
-* **The Solution:** A Python tool that parses PDF bills of materials, checks against local inventory, and calculates safety stock levels.
+* **The Problem:** Manual BOM management leads to "Logistical Entropy" (missing parts/delays).
+* **The Solution:** A deterministic dependency manager that parses PDF BOMs and calculates strict safety stock levels.
 * **Status:** *Complete / External Repository*
 
 ### 2. [Infrastructure: Linear Power Regulator](power-regulator-12v-to-9v/)
-* **The Problem:** Audio circuits need clean DC power, but cheap wall adapters introduce electrical noise.
+* **The Problem:** Cheap wall adapters introduce switching noise (ripple) that pollutes sensitive measurements.
 * **The Solution:** A custom 12V → 9V linear voltage regulator with thermal management to support high-current loads.
 * **Key Components:** L7809CV regulator, Schottky diode for reverse polarity protection, heatsink with ventilation.
 
 ### 3. [The Device: Red Llama Overdrive](red-llama-build/)
-* **The Problem:** Need a test circuit to validate the power supply and measurement system.
-* **The Solution:** Built a Red Llama overdrive clone using CD4049 CMOS inverter chips for soft saturation.
-* **Modification:** Replaced standard diode with Schottky (1N5817) to recover 0.4V of headroom.
+* **The Problem:** Need a "Device Under Test" (DUT) with predictable non-linearity.
+* **The Solution:** Built a Red Llama clone using CD4049 CMOS inverter chips.
+* **Modification:** Replaced standard diodes with Schottky (1N5817) to recover 0.4V of headroom.
 
 <img src="red-llama-build/assets/red_llama_complete.jpg" width="52%" alt="Red Llama Build"> <img src="red-llama-build/assets/red_llama_effects_board_only.jpg" width="45%" alt="Red Llama Circuit">
 
@@ -94,12 +96,9 @@ We use an editable install so changes to the `sysaudio` library are immediately 
 ```bash
 # Initialize virtual environment
 uv venv
+source .venv/bin/activate
 
-# Activate environment
-source .venv/bin/activate  # Mac/Linux
-# .venv\Scripts\activate   # Windows
-
-# Install dependencies and the local package
+# Install dependencies and local package
 uv pip install -e .
 ```
 
@@ -134,7 +133,7 @@ python oscilloscope-rp2040/scripts/capture/record.py
 │   │   ├── 02_instrument_analysis.ipynb     # Harmonic Analysis 🟢
 │   │   ├── 03_transfer_acquisition.ipynb    # Sine Sweep Generation 🟢
 │   │   └── 04_transfer_analysis.ipynb       # Deconvolution (In Progress) 🟡
-│   ├── sysaudio/                   # Analysis Library (FFT, Plotting, Signal Processing)
+│   ├── sysaudio/              # Analysis Library (FFT, Plotting, Signal Processing)
 │   └── schematics/            # Signal Conditioning Circuit Design
 ├── red-llama-build/           # Guitar Overdrive Test Circuit
 │   └── procurement/           # Bills of Materials
@@ -145,33 +144,31 @@ python oscilloscope-rp2040/scripts/capture/record.py
 
 ## 🔮 Future Roadmap: Silicon Revision (v2.0)
 
-With the measurement chain validated, the next iteration focuses on precision and automation.
+With the measurement chain validated, the next iteration focuses on **Determinism** and **Automation**.
 
-**Current State:** The v1.0 oscilloscope uses perfboard construction with manual gain selection (jumpers) and relies on the RP2040's internal 12-bit ADC. This works for characterizing soft-clipping behavior but limits dynamic range for detailed harmonic measurements.
+**Current State:** The v1.0 oscilloscope relies on CPU-polled USB Serial for data transmission. This introduces non-deterministic latency (jitter) dependent on the host OS scheduler.
 
-**The Goal:** Design a custom PCB that replaces manual configuration with software control, enabling push-button transfer function analysis.
+**The Goal:** Design a custom PCB that implements a **Zero-Copy Architecture**, ensuring that sample timing is defined purely by hardware clocks, not software loops.
 
 ### Planned Improvements
 
-**1. PCB Design & Shielding**
-* Transition from perfboard to a 4-layer board with dedicated ground planes for noise reduction.
-* Replace 0.1" headers with **BNC connectors** for compatibility with standard lab equipment.
-* Move to surface-mount components for tighter layout and reduced parasitic capacitance.
+**1. Deterministic Transport (Ethernet vs USB)**
+* **The Problem:** USB is non-deterministic; the device must wait for the host OS to poll for data (1ms - 125µs intervals).
+* **The Fix:** Implement an **Ethernet PHY (W5500/LAN8720)**.
+* **The Result:** The device pushes data via **UDP Streaming** immediately upon acquisition, decoupling the sampling clock from the host OS scheduler.
 
-**2. Signal Chain Upgrade**
-* **External ADC:** Replace the RP2040's 12-bit ADC with a 24-bit audio codec (e.g., I2S interface). This increases dynamic range for measuring low-level harmonics.
-* **On-board Signal Generator:** Add a DAC (e.g., PCM5102) to generate test signals directly from the hardware. This eliminates the dependency on external function generators and enables automated frequency sweeps.
+**2. Zero-Copy DMA Architecture**
+* **The Problem:** Moving data from ADC to memory via CPU interrupts consumes cycles and risks dropping samples during high load.
+* **The Fix:** Implement a **Direct Memory Access (DMA)** pipeline.
+* **The Result:** The ADC writes directly to a ring buffer in RAM, and a second DMA channel feeds the Ethernet MAC. The CPU never touches the sample data, guaranteeing cycle-accurate throughput.
 
-**3. Programmable Input Stage**
-* **Software-Controlled Gain:** Replace jumper-based gain selection with a programmable gain amplifier (PGA) or digitally-switched resistor networks.
-* **AC/DC Coupling:** Use relays to switch coupling modes without disturbing the signal path.
-* **Input Protection:** Add over-voltage protection to handle accidental connection to high-voltage rails.
+**3. Signal Chain Upgrade**
+* **External ADC:** Replace the RP2040's internal 12-bit ADC with a **24-bit Audio Codec** (I2S). This increases dynamic range for measuring low-level harmonics (-90dB noise floor).
+* **On-board DAC:** Integrate a DAC (PCM5102) to generate test signals directly from hardware, enabling self-contained frequency sweeps.
 
-**4. Firmware & Analysis**
-* **DMA-Based Streaming:** Move from polled ADC reads to continuous DMA transfers for gapless data capture.
-* **Automated Characterization:** Implement one-click measurement routines that run a frequency sweep, perform ESS deconvolution, and generate Bode plots without manual intervention.
-
-This revision keeps the RP2040 core (its PIO and DMA capabilities are well-suited for high-speed I/O) but builds a proper analog front-end around it, turning the prototype into a bench instrument.
+**4. Programmable Input Stage**
+* **Software-Controlled Gain:** Replace manual jumpers with a Programmable Gain Amplifier (PGA).
+* **Automated Characterization:** Implement a "One-Click Bode Plot" routine: the system generates a sweep, captures the response via DMA, and streams the data via UDP without manual intervention.
 
 ---
 
