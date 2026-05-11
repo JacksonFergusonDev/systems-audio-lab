@@ -1,12 +1,19 @@
-# ⚡ systems-audio-lab
+<!-- markdownlint-disable-file MD041 -->
+<div align="center">
+
+# Systems Audio Lab
 
 **A vertically integrated audio analysis platform.**
 
-![Python](https://img.shields.io/badge/Python-3.13-blue.svg)
-![Hardware](https://img.shields.io/badge/Hardware-RP2040-red.svg)
-![Version](https://img.shields.io/badge/Version-v1.0_Prototype-orange.svg)
-![Analysis Status](https://img.shields.io/badge/Analysis-In_Progress-yellow.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Analysis Status](https://img.shields.io/badge/analysis-in__progress-white?style=flat-square&color=white&labelColor=black)
+![Version](https://img.shields.io/badge/version-v1.0__prototype-white?style=flat-square&color=white&labelColor=black)
+![Python](https://img.shields.io/badge/python-3.13-white?style=flat-square&color=white&labelColor=black)
+[![Ruff](https://img.shields.io/badge/style-ruff-white?style=flat-square&color=white&labelColor=black)](https://github.com/astral-sh/ruff)
+[![Mypy](https://img.shields.io/badge/mypy-checked-white?style=flat-square&color=white&labelColor=black)](https://mypy-lang.org/)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-white?style=flat-square&color=white&labelColor=black)](https://github.com/pre-commit/pre-commit)
+[![License](https://img.shields.io/badge/license-MIT-white?style=flat-square&color=white&labelColor=black)](LICENSE)
+
+</div>
 
 ### 📡 The Mission: Vertical Integration
 
