@@ -7,12 +7,12 @@ through selecting a continuous recording file, choosing a visual effect style
 """
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 from sysaudio import config, io, render
 
 # Configuration for video output
-VIDEO_SETTINGS: Dict[str, Any] = {
+VIDEO_SETTINGS: dict[str, Any] = {
     "width": 1920,
     "height": 1080,
     "fps": 60,
@@ -26,7 +26,7 @@ VIDEO_SETTINGS: Dict[str, Any] = {
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the video rendering pipeline script.
 
     Performs environment checks (FFmpeg), handles user input for file selection
     and effect choice, determines the output filename, and invokes the
@@ -46,9 +46,7 @@ def main() -> None:
     for key, (name, _) in render.EFFECTS.items():
         print(f"[{key}] {name}")
 
-    effect_choice = input("Select Effect [Default: 2]: ").strip()
-    if not effect_choice:
-        effect_choice = "2"
+    effect_choice = input("Select Effect [Default: 2]: ").strip() or "2"
 
     # 4. Define Output Path
     # Extract style name for filename tagging (e.g., "_crt.mp4")

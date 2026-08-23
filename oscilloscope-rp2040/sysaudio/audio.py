@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -15,7 +15,7 @@ def generate_log_sweep(
     f_start: float, f_end: float, duration: float, fs: int, amp: float
 ) -> np.ndarray:
     """
-    Generates a logarithmic sine sweep array.
+    Generate a logarithmic sine sweep array.
 
     Parameters
     ----------
@@ -43,13 +43,13 @@ def generate_log_sweep(
     if not (0 < f_start < f_end):
         raise ValueError("Require 0 < f_start < f_end")
 
-    n = int(round(duration * fs))
+    n = round(duration * fs)
     t = np.arange(n, dtype=np.float64) / fs
 
     # Log sweep math: phase(t) = (2*pi*f1/log(R)) * (R^t - 1)
-    R = (f_end / f_start) ** (1.0 / duration)
-    B = 2.0 * np.pi * f_start / np.log(R)
-    phase = B * (R**t - 1.0)
+    r = (f_end / f_start) ** (1.0 / duration)
+    b = 2.0 * np.pi * f_start / np.log(r)
+    phase = b * (r**t - 1.0)
 
     return (amp * np.sin(phase)).astype(np.float32)  # type: ignore[no-any-return]
 
@@ -130,15 +130,13 @@ class ContinuousOscillator:
         self.amp = amp
         self.fs = fs
         self.auto_start = auto_start
-        self._stream: Optional[sd.OutputStream] = None
+        self._stream: sd.OutputStream | None = None
         self._start_idx: int = 0
 
     def _callback(
         self, outdata: np.ndarray, frames: int, time_info: Any, status: Any
     ) -> None:
-        """
-        Internal sounddevice callback.
-        """
+        """Handle incoming audio buffers in sounddevice callback."""
         if status:
             print(f"[AudioStatus] {status}")
 
@@ -156,6 +154,7 @@ class ContinuousOscillator:
             self._stream.start()
 
     def __enter__(self) -> "ContinuousOscillator":
+        """Enter the audio stream context and start playback if configured."""
         self._stream = sd.OutputStream(
             samplerate=self.fs, channels=1, dtype="float32", callback=self._callback
         )
@@ -164,6 +163,7 @@ class ContinuousOscillator:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit the audio stream context and close the stream."""
         if self._stream:
             self._stream.stop()
             self._stream.close()
@@ -174,7 +174,7 @@ def generate_drone(
     duration: float, fs: int, amp: float, freq1: float, freq2: float
 ) -> np.ndarray:
     """
-    Generates a sum of two sines (beats).
+    Generate a sum of two sines (beats).
 
     Parameters
     ----------
@@ -204,7 +204,7 @@ def generate_pulsing_drone(
     duration: float, fs: int, amp: float, freq: float, pulse_rate: float
 ) -> np.ndarray:
     """
-    Generates a sine wave modulated by a slow sine LFO.
+    Generate a sine wave modulated by a slow sine LFO.
 
     Parameters
     ----------

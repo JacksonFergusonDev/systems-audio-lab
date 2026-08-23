@@ -3,14 +3,14 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 
 def ensure_dir(directory: str) -> None:
-    """Ensures that the specified directory exists, creating it if necessary."""
+    """Ensure that the specified directory exists, creating it if necessary."""
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -23,7 +23,7 @@ def save_signal(
     **metadata: Any,
 ) -> str:
     """
-    Saves signal, fs, and arbitrary metadata to a timestamped .npz file.
+    Save signal, fs, and arbitrary metadata to a timestamped .npz file.
 
     Parameters
     ----------
@@ -59,14 +59,14 @@ def save_signal(
     # Calculate size for user feedback
     size_mb = os.path.getsize(path) / (1024**2)
     print(f"💾 Saved {path} ({size_mb:.2f} MB)")
-    print(f"   Metadata keys: {list(metadata.keys()) + ['timestamp']}")
+    print(f"   Metadata keys: {[*list(metadata.keys()), 'timestamp']}")
 
     return path
 
 
-def load_signal(filepath: Union[str, Path]) -> Tuple[np.ndarray, float]:
+def load_signal(filepath: str | Path) -> tuple[np.ndarray, float]:
     """
-    Robust loader for .npz files.
+    Load data and sampling rate from an .npz file.
 
     Parameters
     ----------
@@ -107,9 +107,9 @@ def load_signal(filepath: Union[str, Path]) -> Tuple[np.ndarray, float]:
         sys.exit(1)
 
 
-def select_file_cli(directory: str) -> Optional[str]:
+def select_file_cli(directory: str) -> str | None:
     """
-    CLI menu to select a file from a directory.
+    Display a CLI menu to select a file from a directory.
 
     Parameters
     ----------
@@ -143,7 +143,7 @@ def select_file_cli(directory: str) -> Optional[str]:
 
 def scan_metadata(directory: str) -> pd.DataFrame:
     """
-    Recursively scans a directory for .npz files and extracts their metadata.
+    Scan a directory recursively for .npz files and extract their metadata.
 
     Parameters
     ----------
@@ -174,9 +174,9 @@ def scan_metadata(directory: str) -> pd.DataFrame:
                         # Extract the value
                         val = archive[key]
                         # Clean up NumPy types for display
-                        if val.ndim == 0:
-                            val = val.item()
-                        elif isinstance(val, np.ndarray) and val.size == 1:
+                        if val.ndim == 0 or (
+                            isinstance(val, np.ndarray) and val.size == 1
+                        ):
                             val = val.item()
                         # Format specific fields for readability
                         if key == "dominant_freq":
@@ -194,9 +194,9 @@ def scan_metadata(directory: str) -> pd.DataFrame:
 
 def load_latest_file(
     directory: str, pattern: str = "*.npz"
-) -> Tuple[Optional[np.ndarray], Optional[float]]:
+) -> tuple[np.ndarray | None, float | None]:
     """
-    Finds and loads the most recent file matching a pattern.
+    Find and load the most recent file matching a pattern.
 
     Parameters
     ----------

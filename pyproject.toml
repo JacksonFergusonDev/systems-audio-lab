@@ -1,12 +1,10 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "systems-audio-lab"
 version = "0.9.0"
 description = "A complete systems engineering project, spanning software-driven logistics, custom power regulation, embedded instrumentation, and empirical analysis of non-linear analog circuits."
 readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
 requires-python = ">=3.13"
 dependencies = [
     "ipykernel>=7.1.0",
@@ -20,6 +18,14 @@ dependencies = [
     "seaborn>=0.13.2",
     "sounddevice>=0.5.5",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["oscilloscope-rp2040"]
+include = ["sysaudio*"]
 
 [dependency-groups]
 dev = [
@@ -41,26 +47,41 @@ dev = [
     "types-seaborn>=0.13.2.20251221",
 ]
 
+# ==================================================
+# Tool Configuration
+# ==================================================
+
+# ---- ruff ---- #
+
 [tool.ruff]
 line-length = 88
 target-version = "py313"
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]  # pycodestyle, pyflakes, isort
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q"
-
-testpaths = [
-    "oscilloscope-rp2040/tests",
+select = [
+    "A",   # flake8-builtins
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "D",   # pydocstyle
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "PT",  # flake8-pytest
+    "RET", # flake8-return
+    "RUF", # Ruff-specific
+    "SIM", # flake8-simplify
+    "UP",  # pyupgrade
 ]
+ignore = ["D100", "D104", "D107", "E501"]
 
-pythonpath = ["oscilloscope-rp2040"]
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
-[tool.setuptools.packages.find]
-where = ["oscilloscope-rp2040"]
-include = ["sysaudio*"]
+[tool.ruff.lint.per-file-ignores]
+"oscilloscope-rp2040/tests/*.py" = ["D"]
+
+# ---- mypy ---- #
 
 [tool.mypy]
 mypy_path = "oscilloscope-rp2040"
@@ -68,6 +89,8 @@ strict = true
 pretty = true
 show_error_codes = true
 show_column_numbers = true
+show_error_context = true
+explicit_package_bases = true
 
 exclude = [
     "schematic\\.py$",
@@ -85,3 +108,13 @@ module = [
     "matplotlib.*"
 ]
 ignore_missing_imports = true
+
+# ---- pytest ---- #
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+
+testpaths = [
+    "oscilloscope-rp2040/tests",
+]

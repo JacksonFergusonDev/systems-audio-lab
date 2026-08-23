@@ -32,7 +32,8 @@ CAP_PAIR_SPACING = 1.8
 STAGE_GAP = 0.8
 
 
-def draw_schematic():
+def draw_schematic() -> None:
+    """Draw the 9V power regulator schematic and export to SVG and PDF."""
     # We initialize with the SVG file, so it saves that automatically on exit
     with schemdraw.Drawing(file=FILE_SVG, show=False) as d:
         d.config(unit=UNIT_SIZE, fontsize=FONT_SIZE)

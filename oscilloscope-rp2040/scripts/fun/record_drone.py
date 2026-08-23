@@ -8,7 +8,6 @@ visualizations.
 """
 
 import time
-from typing import List
 
 import numpy as np
 import sounddevice as sd
@@ -24,7 +23,7 @@ FILENAME: str = "fun_drone"
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the drone recording script.
 
     Generates the audio stimulus, manages the playback/capture synchronization,
     processes the raw ADC data, and saves the result to disk.
@@ -33,7 +32,7 @@ def main() -> None:
     print(f"🔹 Generating Pulsing Drone ({FREQ}Hz)...")
     wave = audio.generate_pulsing_drone(DURATION, fs_audio, AMP, FREQ, BEAT_FREQ)
 
-    frames: List[np.ndarray] = []
+    frames: list[np.ndarray] = []
     print("🔴 Capturing (Check your volume!)...")
 
     with daq.DAQInterface() as device:

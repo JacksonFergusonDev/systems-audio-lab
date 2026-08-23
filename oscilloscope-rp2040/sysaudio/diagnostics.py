@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, cast
+from typing import Any, cast
 
 import numpy as np
 from scipy.signal import find_peaks
@@ -52,9 +52,9 @@ def check_signal_health(voltages: np.ndarray) -> bool:
     return is_healthy
 
 
-def analyze_spectrum_peaks(voltages: np.ndarray, fs: float) -> Tuple[float, np.ndarray]:
+def analyze_spectrum_peaks(voltages: np.ndarray, fs: float) -> tuple[float, np.ndarray]:
     """
-    Performs a frequency domain sanity check by identifying dominant peaks.
+    Perform a frequency domain sanity check by identifying dominant peaks.
 
     Parameters
     ----------
@@ -81,7 +81,7 @@ def analyze_spectrum_peaks(voltages: np.ndarray, fs: float) -> Tuple[float, np.n
     peaks_idx, props = find_peaks(mags, height=height_thresh, distance=50)
 
     # Sort by height (loudest first)
-    props_dict = cast(Dict[str, Any], props)
+    props_dict = cast(dict[str, Any], props)
     sorted_indices = peaks_idx[np.argsort(props_dict["peak_heights"])[::-1]]
     top_indices = sorted_indices[:5]
     top_freqs = freqs[top_indices]

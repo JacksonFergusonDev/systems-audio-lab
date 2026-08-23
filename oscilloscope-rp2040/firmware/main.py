@@ -23,7 +23,7 @@ adc_buffer = array.array("H", [0] * MAX_SAMPLES)
 @micropython.native
 def capture_burst(adc_obj, buf, size: int):
     """
-    Reads a burst of analog values into a buffer using native code generation.
+    Read a burst of analog values into a buffer using native code generation.
 
     This function is decorated with @micropython.native for speed. It avoids
     memory allocation during the loop to maintain deterministic timing.
@@ -43,7 +43,7 @@ def capture_burst(adc_obj, buf, size: int):
 
 def main():
     """
-    Main firmware loop.
+    Execute the main firmware loop.
 
     Listens for single-character commands over USB Serial (stdin):
     - 's': Science Mode (High Res). Captures MAX_SAMPLES, with GC disabled

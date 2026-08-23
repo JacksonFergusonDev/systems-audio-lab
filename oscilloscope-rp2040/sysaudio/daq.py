@@ -1,5 +1,6 @@
 import time
-from typing import Any, Generator, Optional, Type
+from collections.abc import Generator
+from typing import Any
 
 import numpy as np
 import serial
@@ -29,23 +30,25 @@ class DAQInterface:
     ) -> None:
         self.port = port
         self.baud = baud
-        self.ser: Optional[serial.Serial] = None
+        self.ser: serial.Serial | None = None
 
     def __enter__(self) -> "DAQInterface":
+        """Enter context and connect to the DAQ."""
         self.connect()
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any | None,
     ) -> None:
+        """Exit context and disconnect from the DAQ."""
         self.disconnect()
 
     def connect(self) -> None:
         """
-        Establishes the serial connection and waits for MCU stabilization.
+        Establish the serial connection and wait for MCU stabilization.
 
         Raises
         ------
@@ -57,16 +60,16 @@ class DAQInterface:
             time.sleep(2)  # Allow MCU reset/stabilization
             self.ser.reset_input_buffer()
         except serial.SerialException as e:
-            raise IOError(f"Could not connect to DAQ on {self.port}: {e}")
+            raise OSError(f"Could not connect to DAQ on {self.port}: {e}") from e
 
     def disconnect(self) -> None:
-        """Closes the serial connection if it is currently open."""
+        """Close the serial connection if it is currently open."""
         if self.ser and self.ser.is_open:
             self.ser.close()
 
     def capture_burst(self, samples: int = config.BURST_SAMPLES) -> np.ndarray:
         """
-        Sends the burst command ('s') and retrieves a synchronous block of data.
+        Send the burst command ('s') and retrieve a synchronous block of data.
 
         Parameters
         ----------
@@ -95,7 +98,7 @@ class DAQInterface:
         raw = self.ser.read(expected_bytes)
 
         if len(raw) != expected_bytes:
-            raise IOError(
+            raise OSError(
                 f"Incomplete read: Got {len(raw)} bytes, expected {expected_bytes}"
             )
 
@@ -103,9 +106,9 @@ class DAQInterface:
 
     def stream_generator(
         self, chunk_size: int = config.LIVE_SAMPLES
-    ) -> Generator[np.ndarray, None, None]:
+    ) -> Generator[np.ndarray]:
         """
-        Yields continuous chunks of data for live plotting or processing.
+        Yield continuous chunks of data for live plotting or processing.
 
         Sends the stream command ('v') and enters a loop yielding data blocks.
         The loop continues indefinitely until the generator is closed.

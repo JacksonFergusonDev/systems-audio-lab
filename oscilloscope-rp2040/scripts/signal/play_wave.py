@@ -16,7 +16,7 @@ AMPLITUDE: float = 0.5  # Peak amplitude (0.0 to 1.0)
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the waveform playback and live scope script.
 
     Sets up the oscillator and the DAQ interface, then launches the
     live scope. The audio playback is triggered via the `on_launch`
@@ -24,15 +24,16 @@ def main() -> None:
     """
     print(f"Initializing {SHAPE} wave at {FREQ_HZ}Hz...")
 
-    # 1. Init Audio (auto_start=False means it waits for the scope)
-    with audio.ContinuousOscillator(SHAPE, FREQ_HZ, AMPLITUDE, auto_start=False) as osc:
-        # 2. Start Scope
-        with daq.DAQInterface() as device:
-            viz.run_live_scope(
-                device.stream_generator(),
-                title=f"Generator: {SHAPE.title()} @ {FREQ_HZ}Hz",
-                on_launch=osc.play,
-            )
+    # 1. Init Audio and DAQ
+    with (
+        audio.ContinuousOscillator(SHAPE, FREQ_HZ, AMPLITUDE, auto_start=False) as osc,
+        daq.DAQInterface() as device,
+    ):
+        viz.run_live_scope(
+            device.stream_generator(),
+            title=f"Generator: {SHAPE.title()} @ {FREQ_HZ}Hz",
+            on_launch=osc.play,
+        )
 
 
 if __name__ == "__main__":

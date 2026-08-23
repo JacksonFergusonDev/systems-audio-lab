@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 import matplotlib.colors as mcolors
 import matplotlib.figure as mf
@@ -15,7 +15,7 @@ from scipy.interpolate import make_interp_spline
 from . import config, dsp, metrics
 
 # --- Style Configuration ---
-COLORS: Dict[str, str] = {
+COLORS: dict[str, str] = {
     "clean": "#2ecc71",  # Green (Input)
     "dirty": "#e74c3c",  # Red (Output)
     "noise": "#7f8c8d",  # Gray (Background)
@@ -24,9 +24,9 @@ COLORS: Dict[str, str] = {
 }
 
 
-def save_pdf_svg(fig: mf.Figure, savepath: Union[str, Path], **kwargs: Any) -> None:
+def save_pdf_svg(fig: mf.Figure, savepath: str | Path, **kwargs: Any) -> None:
     """
-    Helper to save a figure in both PDF and SVG formats.
+    Save a figure in both PDF and SVG formats.
 
     Parameters
     ----------
@@ -47,11 +47,11 @@ def plot_gain_stage(
     sig_clean: np.ndarray,
     sig_dirty: np.ndarray,
     fs: float,
-    savepath: Optional[str] = None,
+    savepath: str | None = None,
     show: bool = True,
 ) -> None:
     """
-    Visualizes the gain difference (Vpp) between input and output signals.
+    Visualize the gain difference (Vpp) between input and output signals.
 
     Plots software-triggered waveforms to align phases and annotates the
     calculated gain in dB.
@@ -97,8 +97,8 @@ def plot_gain_stage(
         ha="left",
         va="top",
         fontweight="bold",
-        bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.85),
-        arrowprops=dict(arrowstyle="->", color="black", shrinkA=0, shrinkB=2),
+        bbox={"boxstyle": "round,pad=0.25", "fc": "white", "ec": "none", "alpha": 0.85},
+        arrowprops={"arrowstyle": "->", "color": "black", "shrinkA": 0, "shrinkB": 2},
     )
     plt.tight_layout()
     if savepath:
@@ -111,11 +111,11 @@ def plot_spectral_floor(
     sig_signal: np.ndarray,
     sig_noise: np.ndarray,
     fs: float,
-    savepath: Optional[str] = None,
+    savepath: str | None = None,
     show: bool = True,
 ) -> None:
     """
-    Compares signal power spectrum against the instrument noise floor.
+    Compare signal power spectrum against the instrument noise floor.
 
     Useful for validating SNR (Signal-to-Noise Ratio) in recordings.
     """
@@ -153,12 +153,10 @@ def plot_spectrum_normalized(
     sig_clean: np.ndarray,
     sig_dirty: np.ndarray,
     fs: float,
-    savepath: Optional[str] = None,
+    savepath: str | None = None,
     show: bool = True,
 ) -> None:
-    """
-    Compares harmonic content of two signals, normalized to Peak=1.0 (0dB).
-    """
+    """Compare harmonic content of two signals, normalized to Peak=1.0 (0dB)."""
     data = metrics.compute_normalized_spectra(sig_clean, sig_dirty, fs)
     fig = plt.figure(figsize=(12, 6))
 
@@ -196,11 +194,11 @@ def analyze_harmonics_fixed(
     fs: float,
     fundamental_freq: float = 82.4,
     n_harmonics: int = 10,
-    savepath: Optional[str] = None,
+    savepath: str | None = None,
     show: bool = True,
 ) -> None:
     """
-    Generates a bar chart of the first N harmonics.
+    Generate a bar chart of the first N harmonics.
 
     Prints the relative magnitudes of the first three harmonics to stdout
     for quick analysis of timbre (e.g., Even vs Odd harmonics).
@@ -248,11 +246,11 @@ def plot_bode_response(
     sig_src: np.ndarray,
     sig_dut: np.ndarray,
     fs: float,
-    savepath: Optional[str] = None,
+    savepath: str | None = None,
     show: bool = True,
 ) -> None:
     """
-    Plots the Deconvolved Linear Frequency Response and Impulse Response.
+    Plot the Deconvolved Linear Frequency Response and Impulse Response.
 
     Uses Farina's method (ESS Deconvolution) to separate linear response
     from harmonic distortion.
@@ -318,11 +316,11 @@ def plot_bode_response(
 def plot_transfer_curve(
     sig_src: np.ndarray,
     sig_dut: np.ndarray,
-    savepath: Optional[str] = None,
+    savepath: str | None = None,
     show: bool = True,
 ) -> None:
     """
-    Visualizes the Non-Linear Transfer Characteristic (Vin vs Vout).
+    Visualize the Non-Linear Transfer Characteristic (Vin vs Vout).
 
     This "Soft Clipping Sigmoid" reveals the saturation behavior of the DUT.
     """
@@ -360,11 +358,11 @@ def plot_transfer_curve(
 def plot_thd_fingerprint(
     sig: np.ndarray,
     fs: float = 97812.0,
-    savepath: Optional[str] = None,
+    savepath: str | None = None,
     show: bool = True,
 ) -> None:
     """
-    Visualizes the THD spectrum at 1kHz.
+    Visualize the THD spectrum at 1kHz.
 
     Annotates the first few harmonics to identify the distortion profile
     (e.g., dominance of Even vs Odd harmonics).
@@ -408,11 +406,11 @@ def plot_final_report(
     sig_dirty: np.ndarray,
     fs: float,
     duration_ms: float = 12,
-    savepath: Optional[str] = None,
+    savepath: str | None = None,
     show: bool = True,
 ) -> None:
     """
-    Generates the composite Figure 1 (Waveform Morphology + Harmonic Analysis).
+    Generate the composite Figure 1 (Waveform Morphology + Harmonic Analysis).
 
     Combines a time-domain phase-aligned plot with a bar chart of harmonic content.
     """
@@ -465,7 +463,12 @@ def plot_final_report(
             ha="left",
             color=COLORS["dirty"],
             fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.85),
+            bbox={
+                "boxstyle": "round,pad=0.25",
+                "fc": "white",
+                "ec": "none",
+                "alpha": 0.85,
+            },
         )
 
     plt.tight_layout()
@@ -479,7 +482,7 @@ def plot_health_check(
     voltages: np.ndarray, fs: float, title: str, is_healthy: bool
 ) -> None:
     """
-    Standard diagnostics plot for signal integrity verification.
+    Plot standard diagnostics for signal integrity verification.
 
     Shows the signal trace with overlay lines for voltage rails and virtual ground.
     """
@@ -504,7 +507,7 @@ def _lerp(a: float, b: float, t: float) -> float:
     return a + (b - a) * t
 
 
-def _lerp_rgba(c0: str, c1: str, t: float) -> Tuple[float, float, float, float]:
+def _lerp_rgba(c0: str, c1: str, t: float) -> tuple[float, float, float, float]:
     r0, g0, b0, a0 = to_rgba(c0)
     r1, g1, b1, a1 = to_rgba(c1)
     return (_lerp(r0, r1, t), _lerp(g0, g1, t), _lerp(b0, b1, t), _lerp(a0, a1, t))
@@ -519,7 +522,7 @@ def plot_joyplot_stacked(
     output_file: str = "joyplot.pdf",
 ) -> None:
     """
-    Renders a Ridgeline/Joyplot (stacked lines) from the signal.
+    Render a Ridgeline/Joyplot (stacked lines) from the signal.
 
     Originally from scripts/visualization/joyplot.py. Creates a vectorized
     PDF graphic suitable for scientific posters or cover art.
@@ -557,15 +560,15 @@ def plot_joyplot_stacked(
     line_spacing = 15
 
     # Gradient Configuration
-    TOP_COLOR = "#3D3229"
-    BOTTOM_COLOR = "#3D3229"
-    TOP_ALPHA = 1.0
-    BOTTOM_ALPHA = 1.0
-    FILL_COLOR = "#FFFFFF"
-    FILL_FOLLOWS_GRADIENT = False
+    top_color = "#3D3229"
+    bottom_color = "#3D3229"
+    top_alpha = 1.0
+    bottom_alpha = 1.0
+    fill_color_hex = "#FFFFFF"
+    fill_follows_gradient = False
 
     # 3. Setup Plot
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _fig, ax = plt.subplots(figsize=(10, 6))
 
     # 4. Render Loop
     for i in range(lines):
@@ -580,21 +583,19 @@ def plot_joyplot_stacked(
         y_base = (lines - i) * line_spacing
         y_curve = (segment * wave_scale) + y_base
 
-        if lines <= 1:
-            t = 0.0
-        else:
-            t = i / (lines - 1)
+        t = 0.0 if lines <= 1 else i / (lines - 1)
 
-        alpha = _lerp(TOP_ALPHA, BOTTOM_ALPHA, t)
-        stroke_rgb = _lerp_rgba(TOP_COLOR, BOTTOM_COLOR, t)
+        alpha = _lerp(top_alpha, bottom_alpha, t)
+        stroke_rgb = _lerp_rgba(top_color, bottom_color, t)
         stroke_color = (stroke_rgb[0], stroke_rgb[1], stroke_rgb[2], 1.0)
 
-        if FILL_FOLLOWS_GRADIENT:
-            fill_rgb = _lerp_rgba(TOP_COLOR, BOTTOM_COLOR, t)
+        if fill_follows_gradient:
+            fill_rgb = _lerp_rgba(top_color, bottom_color, t)
             fill_color = (fill_rgb[0], fill_rgb[1], fill_rgb[2], 1.0)
             fill_alpha = alpha
         else:
-            fill_color = to_rgba(FILL_COLOR)
+            fill_color = to_rgba(fill_color_hex)
+            fill_alpha = 1.0
 
         ax.fill_between(
             x, y_base, y_curve, color=fill_color, zorder=i, alpha=fill_alpha
@@ -623,7 +624,7 @@ def plot_phase_portrait(
     signal: np.ndarray, delay: int, filename_base: str = "phase_portrait"
 ) -> None:
     """
-    Renders a phase portrait (Time-Delay Embedding / Neon Torus).
+    Render a phase portrait (Time-Delay Embedding / Neon Torus).
 
     Plots x(t) vs x(t + delay) with time-mapped coloring to visualize
     chaos or periodicity in the signal.
@@ -636,7 +637,7 @@ def plot_phase_portrait(
 
     # 2. Setup the "Neon" aesthetic
     plt.style.use("dark_background")
-    fig, ax = plt.subplots(figsize=(10, 10))
+    _fig, ax = plt.subplots(figsize=(10, 10))
 
     # 3. Create a colored line collection (Color by time/index)
     points = np.array([x, y]).T.reshape(-1, 1, 2)
@@ -678,7 +679,7 @@ def plot_spectral_landscape(
     filename_base: str = "harmonic_landscape",
 ) -> None:
     """
-    Renders a 3D spectral landscape ("Joyplot" style in frequency domain).
+    Render a 3D spectral landscape ("Joyplot" style in frequency domain).
 
     Visualizes how the frequency spectrum evolves over time by stacking
     successive FFT slices.
@@ -703,30 +704,30 @@ def plot_spectral_landscape(
     print(f"🎨 Rendering Landscape (Gamma={gamma})...")
 
     # Gradient Configuration
-    CUSTOM_PALETTE = [
+    custom_palette = [
         "#020202",  # Black
         "#13010B",  # Deep Purple
         "#011409",  # Magenta
         "#005A66",  # Orange
         "#3D0023",  # Yellow
     ]
-    BG_COLOR = "none"
-    FILL_COLOR = "white"
-    LINE_WIDTH = 1.2
-    HEIGHT_FACTOR = 0.8
-    STACK_ORDER = "bottom_front"
+    bg_color = "none"
+    fill_color = "white"
+    line_width = 1.2
+    height_factor = 0.8
+    stack_order = "bottom_front"
 
     total_samples = len(signal)
     samples_per_slice = total_samples // slices
 
     # Setup Plot
     fig, ax = plt.subplots(figsize=(10, 10))
-    fig.patch.set_facecolor(BG_COLOR)
-    ax.set_facecolor(BG_COLOR)
+    fig.patch.set_facecolor(bg_color)
+    ax.set_facecolor(bg_color)
 
     # Create Custom Colormap
     cmap = mcolors.LinearSegmentedColormap.from_list(
-        "custom_theme", CUSTOM_PALETTE, N=256
+        "custom_theme", custom_palette, N=256
     )
 
     # Iterate through slices
@@ -759,13 +760,10 @@ def plot_spectral_landscape(
 
         # 4. Perspective Math
         y_base = i * overlap
-        y_curve = m_smooth * HEIGHT_FACTOR + y_base
+        y_curve = m_smooth * height_factor + y_base
 
         # 5. Z-Order Logic
-        if STACK_ORDER == "bottom_front":
-            z_base = (slices - i) * 2
-        else:
-            z_base = i * 2
+        z_base = (slices - i) * 2 if stack_order == "bottom_front" else i * 2
 
         # 6. Color Logic
         vol_metric = np.max(np.abs(chunk))
@@ -774,9 +772,9 @@ def plot_spectral_landscape(
 
         # Draw
         ax.fill_between(
-            f_smooth, y_base, y_curve, color=FILL_COLOR, alpha=1.0, zorder=z_base
+            f_smooth, y_base, y_curve, color=fill_color, alpha=1.0, zorder=z_base
         )
-        ax.plot(f_smooth, y_curve, color=color, lw=LINE_WIDTH, zorder=z_base + 1)
+        ax.plot(f_smooth, y_curve, color=color, lw=line_width, zorder=z_base + 1)
 
     ax.axis("off")
     ax.set_xlim(0, 600)

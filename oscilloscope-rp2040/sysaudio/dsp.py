@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import numpy as np
 import scipy.signal as spsig
 
@@ -8,7 +6,7 @@ from . import config
 
 def raw_to_volts(raw_data: np.ndarray) -> np.ndarray:
     """
-    Converts raw uint16 ADC values to float64 voltages.
+    Convert raw uint16 ADC values to float64 voltages.
 
     Parameters
     ----------
@@ -25,7 +23,7 @@ def raw_to_volts(raw_data: np.ndarray) -> np.ndarray:
 
 def remove_dc(signal: np.ndarray) -> np.ndarray:
     """
-    Subtracts the mean (DC offset) from the signal.
+    Subtract the mean (DC offset) from the signal.
 
     Parameters
     ----------
@@ -42,8 +40,9 @@ def remove_dc(signal: np.ndarray) -> np.ndarray:
 
 def software_trigger(signal: np.ndarray, threshold: float = config.V_MID) -> np.ndarray:
     """
-    Stabilizes a periodic waveform by rolling the array to align
-    the first rising edge crossing with index 0.
+    Stabilize a periodic waveform by aligning the first rising edge.
+
+    Rolls the array to align the first rising edge crossing with index 0.
 
     Parameters
     ----------
@@ -66,9 +65,9 @@ def software_trigger(signal: np.ndarray, threshold: float = config.V_MID) -> np.
     return signal
 
 
-def compute_spectrum(signal: np.ndarray, fs: float) -> Tuple[np.ndarray, np.ndarray]:
+def compute_spectrum(signal: np.ndarray, fs: float) -> tuple[np.ndarray, np.ndarray]:
     """
-    Computes the one-sided FFT magnitude spectrum using a Hann window.
+    Compute the one-sided FFT magnitude spectrum using a Hann window.
 
     Parameters
     ----------
@@ -102,7 +101,7 @@ def estimate_fundamental(
     freqs: np.ndarray, mags: np.ndarray, fmin: float = 20.0, fmax: float = 2000.0
 ) -> float:
     """
-    Finds the frequency of the dominant peak within a specific band.
+    Find the frequency of the dominant peak within a specific band.
 
     Parameters
     ----------
@@ -143,8 +142,10 @@ def calculate_selective_thd(
     n_harmonics: int = 10,
 ) -> float:
     """
-    Calculates Total Harmonic Distortion (THD) by summing ONLY the energy
-    at specific harmonic frequencies, ignoring the broad-band noise floor.
+    Calculate Total Harmonic Distortion (THD) from selective harmonics.
+
+    Sums ONLY the energy at specific harmonic frequencies, ignoring the
+    broad-band noise floor.
 
     Parameters
     ----------
@@ -208,7 +209,7 @@ def calculate_selective_thd(
 
 def smart_align(sig_ref: np.ndarray, sig_target: np.ndarray) -> np.ndarray:
     """
-    Aligns 'sig_target' to match the phase of 'sig_ref' using Cross-Correlation.
+    Align 'sig_target' to match the phase of 'sig_ref' using cross-correlation.
 
     Parameters
     ----------
@@ -230,11 +231,4 @@ def smart_align(sig_ref: np.ndarray, sig_target: np.ndarray) -> np.ndarray:
     lag = lags[np.argmax(correlation)]
 
     # 3. Shift the target signal
-    if lag > 0:
-        # Target is ahead, roll it back
-        aligned = np.roll(sig_target, -lag)
-    else:
-        # Target is behind, roll it forward
-        aligned = np.roll(sig_target, -lag)
-
-    return aligned
+    return np.roll(sig_target, -lag)

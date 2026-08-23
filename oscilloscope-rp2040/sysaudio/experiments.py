@@ -187,7 +187,7 @@ def capture_steady_transfer(
 
 def capture_instrument_clip(filename: str, notes: str = "") -> str:
     """
-    Captures a manual instrument input (e.g., Guitar, Bass).
+    Capture a manual instrument input (e.g., Guitar, Bass).
 
     Parameters
     ----------
@@ -209,7 +209,7 @@ def capture_instrument_clip(filename: str, notes: str = "") -> str:
 
         # --- DIAGNOSTICS & METRICS ---
         is_healthy = diagnostics.check_signal_health(volts)
-        dom_freq, harmonics = diagnostics.analyze_spectrum_peaks(
+        dom_freq, _harmonics = diagnostics.analyze_spectrum_peaks(
             volts, config.FS_DEFAULT
         )
 
@@ -243,7 +243,7 @@ def capture_instrument_clip(filename: str, notes: str = "") -> str:
 
 def capture_continuous_stream(prefix: str = "session") -> None:
     """
-    Captures data indefinitely until KeyboardInterrupt.
+    Capture data indefinitely until KeyboardInterrupt.
 
     Designed for long-running captures. Data is accumulated in memory
     and saved only upon stopping the stream via Ctrl+C.

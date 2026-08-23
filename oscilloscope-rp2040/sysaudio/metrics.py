@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -9,9 +9,9 @@ from . import dsp
 
 def calculate_gain_metrics(
     sig_clean: np.ndarray, sig_dirty: np.ndarray, duration_ms: float, fs: float
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
-    Computes Vpp gain and identifies the peak gain region.
+    Compute Vpp gain and identify the peak gain region.
 
     Parameters
     ----------
@@ -69,9 +69,9 @@ def calculate_gain_metrics(
 
 def compute_spectrum_data(
     signal: np.ndarray, fs: float
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    Wrapper for dsp.compute_spectrum to keep metrics generic.
+    Compute frequency spectrum data as a wrapper around dsp.compute_spectrum.
 
     Returns
     -------
@@ -83,9 +83,9 @@ def compute_spectrum_data(
 
 def compute_bode_data_broken(
     sig_src: np.ndarray, sig_dut: np.ndarray, fs: float
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
-    Derives the System Transfer Function H(f) using the H1 Estimator method.
+    Derive the System Transfer Function H(f) using the H1 Estimator method.
 
     Calculates H1 = Pxy / Pxx (Cross-Spectral Density / Power Spectral Density).
     This method is robust against noise but sensitive to non-linearities.
@@ -130,21 +130,21 @@ def compute_bode_data_broken(
     # 4096 samples gives ~23Hz resolution at 96kHz
     nperseg = 4096
 
-    # Pxx: Power Spectral Density of Input
-    f, Pxx = spsig.welch(x, fs, nperseg=nperseg)
-    # Pxy: Cross Spectral Density
-    _, Pxy = spsig.csd(x, y, fs, nperseg=nperseg)
-    # Cxy: Coherence (0 to 1 reliability metric)
-    _, Cxy = spsig.coherence(x, y, fs, nperseg=nperseg)
+    # pxx: Power Spectral Density of Input
+    f, pxx = spsig.welch(x, fs, nperseg=nperseg)
+    # pxy: Cross Spectral Density
+    _, pxy = spsig.csd(x, y, fs, nperseg=nperseg)
+    # cxy: Coherence (0 to 1 reliability metric)
+    _, cxy = spsig.coherence(x, y, fs, nperseg=nperseg)
 
     # 3. Calculate H1 Transfer Function
-    H = Pxy / Pxx
-    gain_db = 20 * np.log10(np.abs(H) + 1e-9)
+    h = pxy / pxx
+    gain_db = 20 * np.log10(np.abs(h) + 1e-9)
 
     # 4. Smoothing
     window_size = 5
     gain_smooth = np.convolve(gain_db, np.ones(window_size) / window_size, mode="same")
-    coherence_smooth = np.convolve(Cxy, np.ones(window_size) / window_size, mode="same")
+    coherence_smooth = np.convolve(cxy, np.ones(window_size) / window_size, mode="same")
 
     # Find Peak (valid frequencies > 20Hz only)
     valid_mask = (f > 20) & (f < 20000)
@@ -163,9 +163,9 @@ def compute_bode_data_broken(
 
 def prepare_transfer_curve(
     sig_src: np.ndarray, sig_dut: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    Normalizes and phase-aligns signals for XY transfer curve plotting.
+    Normalize and phase-align signals for XY transfer curve plotting.
 
     Returns
     -------
@@ -181,9 +181,9 @@ def prepare_transfer_curve(
 
 def extract_harmonics_list(
     signal: np.ndarray, fs: float, fundamental_freq: float, n_harmonics: int = 10
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame | None:
     """
-    Extracts magnitude relative to fundamental for the first N harmonics.
+    Extract magnitude relative to fundamental for the first N harmonics.
 
     Parameters
     ----------
@@ -233,9 +233,9 @@ def extract_harmonics_list(
 
 def compute_normalized_spectra(
     sig_clean: np.ndarray, sig_dirty: np.ndarray, fs: float
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """
-    Computes spectra for two signals, normalized to Peak=1.0.
+    Compute spectra for two signals, normalized to Peak=1.0.
 
     Returns
     -------
@@ -255,9 +255,9 @@ def compute_normalized_spectra(
 
 def compute_spectral_comparison(
     sig_clean: np.ndarray, sig_dirty: np.ndarray, fs: float, fundamental: float = 82.4
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame | None:
     """
-    Generates a comparative DataFrame of harmonic magnitudes for two signals.
+    Generate a comparative DataFrame of harmonic magnitudes for two signals.
 
     Returns
     -------
@@ -279,7 +279,7 @@ def generate_inverse_filter(
     f_start: float, f_end: float, duration: float, fs: float
 ) -> np.ndarray:
     """
-    Generates the Inverse Filter for a Logarithmic Sine Sweep (Farina 2000).
+    Generate the Inverse Filter for a Logarithmic Sine Sweep (Farina 2000).
 
     This filter corrects the -3dB/octave slope of the log sweep (Pink Noise profile)
     to a flat White Noise profile during deconvolution.
@@ -289,18 +289,18 @@ def generate_inverse_filter(
     np.ndarray
         The time-reversed, amplitude-weighted inverse sweep.
     """
-    n = int(round(duration * fs))
+    n = round(duration * fs)
     t = np.arange(n, dtype=np.float64) / fs
 
     # 1. Regenerate the ideal sweep
-    R = (f_end / f_start) ** (1.0 / duration)
-    B = 2.0 * np.pi * f_start / np.log(R)
-    phase = B * (R**t - 1.0)
+    r = (f_end / f_start) ** (1.0 / duration)
+    b = 2.0 * np.pi * f_start / np.log(r)
+    phase = b * (r**t - 1.0)
     sweep = np.sin(phase)
 
     # 2. Generate Amplitude Envelope (Blue Noise Slope)
     # Corrects pink noise spectrum of log sweep.
-    w = np.exp(t * np.log(R) / duration)
+    w = np.exp(t * np.log(r) / duration)
 
     # 3. Create Inverse
     # Time reverse the weighted sweep to place high frequencies at the start.
@@ -316,9 +316,9 @@ def compute_impulse_response(
     f_start: float = 20.0,
     f_end: float = 20000.0,
     duration: float = 5.0,
-) -> Tuple[np.ndarray, int]:
+) -> tuple[np.ndarray, int]:
     """
-    Performs Deconvolution to extract the Linear Impulse Response (IR).
+    Perform deconvolution to extract the Linear Impulse Response (IR).
 
     Uses FFT convolution with the analytic inverse of the log sine sweep.
 
@@ -343,9 +343,9 @@ def compute_impulse_response(
 
 def compute_bode_data(
     sig_src: np.ndarray, sig_dut: np.ndarray, fs: float
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
-    Derives the Linear Frequency Response using ESS Deconvolution.
+    Derive the Linear Frequency Response using ESS Deconvolution.
 
     Applies Farina's method with asymmetric windowing to separate the linear
     impulse response from harmonic distortion products.
@@ -364,12 +364,12 @@ def compute_bode_data(
     Dict[str, Any]
         Dictionary containing frequency response, peak metrics, and IR preview.
     """
-    F_START = 20.0
-    F_END = 20000.0
-    DURATION = 5.0
+    f_start = 20.0
+    f_end = 20000.0
+    duration = 5.0
 
     # 1. Deconvolve
-    ir, peak_idx = compute_impulse_response(sig_dut, fs, F_START, F_END, DURATION)
+    ir, peak_idx = compute_impulse_response(sig_dut, fs, f_start, f_end, duration)
 
     # 2. Asymmetric Windowing (The "Farina Cut")
     # Pre-peak: Short (excludes harmonic pre-echoes)
@@ -394,7 +394,7 @@ def compute_bode_data(
     freqs, mag_linear = dsp.compute_spectrum(ir_windowed, fs)
 
     # Filter valid band
-    valid_mask = (freqs > F_START) & (freqs < F_END)
+    valid_mask = (freqs > f_start) & (freqs < f_end)
     f_axis = freqs[valid_mask]
     m_axis = mag_linear[valid_mask]
 

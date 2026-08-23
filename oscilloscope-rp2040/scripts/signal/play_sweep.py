@@ -19,7 +19,7 @@ AMPLITUDE: float = 0.5  # 0.0 to 1.0
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the log sweep playback and live capture script.
 
     Generates the sweep buffer, establishes the DAQ connection, and launches
     the live visualization. The audio playback is triggered via a callback

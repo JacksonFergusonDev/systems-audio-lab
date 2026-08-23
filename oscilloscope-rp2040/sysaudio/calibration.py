@@ -1,7 +1,6 @@
 import json
 import os
 import time
-from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +11,7 @@ from . import config, daq, dsp
 
 def save_calibration(fs: float) -> None:
     """
-    Saves the calibrated sampling rate to the calibration JSON file.
+    Save the calibrated sampling rate to the calibration JSON file.
 
     Creates the parent directory for the calibration file if it does not exist.
     The file will contain the sampling rate, a timestamp, and the hardware default.
@@ -38,9 +37,9 @@ def save_calibration(fs: float) -> None:
     print(f"💾 Calibration saved to {config.CALIBRATION_FILE_PATH}")
 
 
-def load_calibration() -> Optional[float]:
+def load_calibration() -> float | None:
     """
-    Attempts to load a previously saved sampling rate from disk.
+    Load a previously saved sampling rate from disk if available.
 
     Returns
     -------
@@ -52,7 +51,7 @@ def load_calibration() -> Optional[float]:
         return None
 
     try:
-        with open(config.CALIBRATION_FILE_PATH, "r") as f:
+        with open(config.CALIBRATION_FILE_PATH) as f:
             data = json.load(f)
 
         fs = data.get("fs")
@@ -67,7 +66,7 @@ def load_calibration() -> Optional[float]:
 
 def calibrate_fs_robust(visualize: bool = True) -> float:
     """
-    Calculates the true sampling rate by analyzing 60Hz mains hum.
+    Calculate the true sampling rate by analyzing 60Hz mains hum.
 
     This function captures a burst of data, identifying the mains frequency
     assuming the user is touching the input jack. It uses a weighted average
@@ -105,14 +104,12 @@ def calibrate_fs_robust(visualize: bool = True) -> float:
         fft_mag = np.abs(np.fft.fft(windowed)[: n // 2])
 
         # 4. Find Peak
-        peak_idx = np.argmax(fft_mag)
+        peak_idx = int(np.argmax(fft_mag))
         peak_mag = fft_mag[peak_idx]
 
         # 5. Calculate SNR (exclude 10 bins around peak)
         noise_mask = np.ones(len(fft_mag), dtype=bool)
-        noise_mask[max(0, int(peak_idx) - 5) : min(len(fft_mag), int(peak_idx) + 5)] = (
-            False
-        )
+        noise_mask[max(0, peak_idx - 5) : min(len(fft_mag), peak_idx + 5)] = False
         noise_floor = np.mean(fft_mag[noise_mask])
 
         snr = peak_mag / noise_floor if noise_floor > 0 else 0

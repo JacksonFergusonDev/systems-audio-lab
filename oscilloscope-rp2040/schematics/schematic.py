@@ -71,18 +71,21 @@ BOX_PAD_Y = 0.45
 # 2. COMPONENT BUILDER
 # ==========================================
 class RP2040AFEBuilder:
+    """Build circuit elements for the RP2040 analog front-end."""
+
     def __init__(self, drawing):
         self.d = drawing
         self.cfg = COMPONENT_CONFIG
 
     def _lbl(self, symbol, key):
-        """Helper to format labels as '$Symbol$\nValue'"""
+        r"""Format labels as '$Symbol$\nValue'."""
         val = self.cfg.get(key, "")
         if val:
             return f"{symbol}\n{val}"
         return symbol
 
     def add_input(self):
+        """Add input dot and protection resistor."""
         elms = []
         elms.append(self.d.add(elm.Dot(open=True).label("Input", loc="left")))
 
@@ -91,6 +94,7 @@ class RP2040AFEBuilder:
         return elms
 
     def add_coupling(self, anchor):
+        """Add AC coupling capacitor element."""
         elms = []
         self.d.here = anchor.end
 
@@ -99,6 +103,7 @@ class RP2040AFEBuilder:
         return c_ac, elms
 
     def add_attenuator(self):
+        """Add voltage divider attenuator stage."""
         elms = []
 
         # Top Resistor (R_div1)
@@ -157,6 +162,7 @@ class RP2040AFEBuilder:
         return node_a, elms
 
     def add_bias(self, anchor_node, offset_up=1.5, offset_left=3.5):
+        """Add DC bias and filter network."""
         elms = []
         self.d.push()
         self.d.here = anchor_node.end
@@ -204,6 +210,7 @@ class RP2040AFEBuilder:
         return elms
 
     def add_clamp_adc(self):
+        """Add diode clamping protection and RP2040 ADC terminal."""
         elms = []
         lbl_clamp = self._lbl("$R_{clamp}$", "R_CLAMP_VAL")
         elms.append(self.d.add(elm.Resistor().label(lbl_clamp, loc="bottom")))
@@ -247,6 +254,7 @@ class RP2040AFEBuilder:
 
 
 def draw_compact():
+    """Draw and export the compact schematic layout."""
     # removed file=... from constructor so we can manually save multiples
     with schemdraw.Drawing(show=False) as d:
         d.config(unit=UNIT_SIZE, fontsize=FONT_SIZE)
@@ -259,7 +267,7 @@ def draw_compact():
         builder = RP2040AFEBuilder(d)
 
         builder.add_input()
-        c_ac, _ = builder.add_coupling(d.elements[-1])
+        _c_ac, _ = builder.add_coupling(d.elements[-1])
         node_a, _ = builder.add_attenuator()
 
         builder.add_bias(node_a, offset_up=1.5, offset_left=4.0)
@@ -275,6 +283,7 @@ def draw_compact():
 
 
 def draw_blocked():
+    """Draw and export the blocked/annotated schematic layout."""
     with schemdraw.Drawing(show=False) as d:
         d.config(unit=UNIT_SIZE, fontsize=FONT_SIZE)
         d.add(

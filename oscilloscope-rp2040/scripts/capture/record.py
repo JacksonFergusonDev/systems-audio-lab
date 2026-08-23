@@ -11,7 +11,7 @@ from sysaudio import config, daq, dsp, io
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the record script to capture and save ADC burst data.
 
     Connects to the DAQ, captures a single burst of samples,
     converts them to voltages, and saves the file to disk.

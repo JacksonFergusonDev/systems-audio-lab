@@ -1,5 +1,6 @@
 import time
-from typing import Any, Callable, Iterable, Optional, Tuple, cast
+from collections.abc import Callable, Iterable
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,9 +14,9 @@ from . import config, dsp
 
 def init_scope_plot(
     samples: int = config.LIVE_SAMPLES, fs: float = config.FS_DEFAULT
-) -> Tuple[Figure, Axes, Line2D, Text]:
+) -> tuple[Figure, Axes, Line2D, Text]:
     """
-    Sets up a dark-mode oscilloscope figure with reference lines.
+    Set up a dark-mode oscilloscope figure with reference lines.
 
     Parameters
     ----------
@@ -56,11 +57,11 @@ def init_scope_plot(
 def run_live_scope(
     stream_generator: Iterable[np.ndarray],
     title: str = "Live Scope",
-    stop_condition: Optional[Callable[[], bool]] = None,
-    on_launch: Optional[Callable[[], None]] = None,
+    stop_condition: Callable[[], bool] | None = None,
+    on_launch: Callable[[], None] | None = None,
 ) -> None:
     """
-    Runs a reusable, high-performance oscilloscope loop using blitting.
+    Run a reusable, high-performance oscilloscope loop using blitting.
 
     Parameters
     ----------
@@ -141,7 +142,7 @@ def run_playback_scope(
     title: str = "Playback",
 ) -> None:
     """
-    Simulates a live scope visualization from a recorded data array.
+    Simulate a live scope visualization from a recorded data array.
 
     Parameters
     ----------
@@ -226,7 +227,7 @@ def analyze_signal_plot(
     signal: np.ndarray, fs: float, title: str = "Signal Analysis"
 ) -> None:
     """
-    Generates a static analysis plot showing Time Domain and Frequency Spectrum.
+    Generate a static analysis plot showing Time Domain and Frequency Spectrum.
 
     Parameters
     ----------

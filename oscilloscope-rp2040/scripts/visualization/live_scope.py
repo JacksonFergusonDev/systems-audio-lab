@@ -15,7 +15,7 @@ from sysaudio import daq, dsp, viz
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the live oscilloscope display script.
 
     Initializes the scope window and runs the animation loop using
     background blitting for optimal frame rates.

@@ -14,7 +14,7 @@ from sysaudio import config, dsp, io, viz
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the playback scope visualization script.
 
     Prompts the user to select a file, loads the signal data, converts raw
     ADC values to voltages if necessary, and launches the playback visualization.

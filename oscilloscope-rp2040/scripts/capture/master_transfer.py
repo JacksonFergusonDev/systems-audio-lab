@@ -15,7 +15,7 @@ MODE: str = "sweep"
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the master transfer script.
 
     Selects the experiment mode based on the global MODE constant and
     calls the appropriate function from `src.experiments`.

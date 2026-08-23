@@ -12,7 +12,7 @@ from sysaudio import io, plots
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the joyplot rendering script.
 
     Parses CLI arguments for input file, styling options (lines, zoom, scale),
     and output path. Loads the signal using the project's standard IO module

@@ -22,7 +22,7 @@ DELAY_SAMPLES: int = 800
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the neon torus visualization script.
 
     Generates the audio stimulus, captures the system response, processes
     the signal (DC removal, normalization), and renders the phase portrait.
@@ -54,10 +54,7 @@ def main() -> None:
 
     # Normalize for plotting (avoid division by zero)
     peak = np.max(np.abs(ac_signal))
-    if peak > 0:
-        norm_signal = ac_signal / peak
-    else:
-        norm_signal = ac_signal
+    norm_signal = ac_signal / peak if peak > 0 else ac_signal
 
     plots.plot_phase_portrait(norm_signal, DELAY_SAMPLES)
 

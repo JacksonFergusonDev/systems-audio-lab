@@ -11,7 +11,7 @@ from sysaudio import config, dsp, io, plots
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the 3D landscape rendering script.
 
     Loads the latest drone recording, performs signal conditioning,
     and triggers the landscape rendering.

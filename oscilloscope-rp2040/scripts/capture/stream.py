@@ -11,7 +11,7 @@ from sysaudio import experiments
 
 def main() -> None:
     """
-    Main execution entry point.
+    Execute the stream script for continuous data acquisition.
 
     Calls `experiments.capture_continuous_stream`, which handles the
     infinite loop, buffering, and graceful shutdown upon KeyboardInterrupt.

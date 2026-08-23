@@ -1,6 +1,7 @@
 import shutil
 import sys
-from typing import Any, Callable, Dict, List, Tuple
+from collections.abc import Callable
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +16,8 @@ from . import config, dsp, io
 # --- DEPENDENCY CHECK ---
 def check_ffmpeg() -> None:
     """
-    Verifies that FFmpeg is installed and accessible in the system PATH.
+    Verify that FFmpeg is installed and accessible in the system PATH.
+
     Exits the program if not found.
     """
     if shutil.which("ffmpeg") is None:
@@ -27,7 +29,7 @@ def check_ffmpeg() -> None:
 # --- EFFECT ENGINES ---
 def _style_base(ax: Axes, samples: int, fs: float) -> np.ndarray:
     """
-    Applies common styling to the plot axis (grid, limits, removing spines).
+    Apply common styling to the plot axis (grid, limits, removing spines).
 
     Returns
     -------
@@ -44,11 +46,9 @@ def _style_base(ax: Axes, samples: int, fs: float) -> np.ndarray:
 
 
 def setup_clean(
-    samples: int, fs: float, v_conf: Dict[str, Any]
-) -> Tuple[Figure, Axes, List[Line2D], Callable[[List[Line2D], np.ndarray], None]]:
-    """
-    Sets up the 'Clean' visualization style (clinical, green line).
-    """
+    samples: int, fs: float, v_conf: dict[str, Any]
+) -> tuple[Figure, Axes, list[Line2D], Callable[[list[Line2D], np.ndarray], None]]:
+    """Set up the 'Clean' visualization style (clinical, green line)."""
     plt.style.use("dark_background")
     fig = plt.figure(
         figsize=(v_conf["width"] / v_conf["dpi"], v_conf["height"] / v_conf["dpi"]),
@@ -58,18 +58,16 @@ def setup_clean(
     x = _style_base(ax, samples, fs)
     (line,) = ax.plot(x, np.zeros(samples), color="#00ff00", lw=1.5)
 
-    def update(lines: List[Line2D], data: np.ndarray) -> None:
+    def update(lines: list[Line2D], data: np.ndarray) -> None:
         lines[0].set_ydata(data)
 
     return fig, ax, [line], update
 
 
 def setup_crt_bloom(
-    samples: int, fs: float, v_conf: Dict[str, Any]
-) -> Tuple[Figure, Axes, List[Line2D], Callable[[List[Line2D], np.ndarray], None]]:
-    """
-    Sets up the 'CRT Bloom' visualization style (stacked glowing lines).
-    """
+    samples: int, fs: float, v_conf: dict[str, Any]
+) -> tuple[Figure, Axes, list[Line2D], Callable[[list[Line2D], np.ndarray], None]]:
+    """Set up the 'CRT Bloom' visualization style (stacked glowing lines)."""
     plt.style.use("dark_background")
     fig = plt.figure(
         figsize=(v_conf["width"] / v_conf["dpi"], v_conf["height"] / v_conf["dpi"]),
@@ -91,7 +89,7 @@ def setup_crt_bloom(
     (core,) = ax.plot(x, np.zeros(samples), color="#ccffcc", lw=1.2, alpha=1.0)
     lines.append(core)
 
-    def update(lines: List[Line2D], data: np.ndarray) -> None:
+    def update(lines: list[Line2D], data: np.ndarray) -> None:
         for line in lines:
             line.set_ydata(data)
 
@@ -99,11 +97,9 @@ def setup_crt_bloom(
 
 
 def setup_cyber_glitch(
-    samples: int, fs: float, v_conf: Dict[str, Any]
-) -> Tuple[Figure, Axes, List[Line2D], Callable[[List[Line2D], np.ndarray], None]]:
-    """
-    Sets up the 'Cyber Glitch' visualization style (RGB separation + jitter).
-    """
+    samples: int, fs: float, v_conf: dict[str, Any]
+) -> tuple[Figure, Axes, list[Line2D], Callable[[list[Line2D], np.ndarray], None]]:
+    """Set up the 'Cyber Glitch' visualization style (RGB separation + jitter)."""
     plt.style.use("dark_background")
     fig = plt.figure(
         figsize=(v_conf["width"] / v_conf["dpi"], v_conf["height"] / v_conf["dpi"]),
@@ -115,7 +111,7 @@ def setup_cyber_glitch(
     colors = ["#ff0000", "#00ff00", "#0000ff"]
     lines = [ax.plot(x, np.zeros(samples), color=c, lw=2, alpha=0.6)[0] for c in colors]
 
-    def update(lines: List[Line2D], data: np.ndarray) -> None:
+    def update(lines: list[Line2D], data: np.ndarray) -> None:
         # Simulate chromatic aberration by rolling channels
         shift = int(samples * 0.005)
         r_data = np.roll(data, shift)
@@ -133,7 +129,7 @@ def setup_cyber_glitch(
 
 
 # Registry of available effects
-EFFECTS: Dict[str, Tuple[str, Callable[..., Any]]] = {
+EFFECTS: dict[str, tuple[str, Callable[..., Any]]] = {
     "1": ("Clean (Clinical)", setup_clean),
     "2": ("CRT Bloom (Phosphor)", setup_crt_bloom),
     "3": ("Cyber Glitch (Aberration)", setup_cyber_glitch),
@@ -142,10 +138,10 @@ EFFECTS: Dict[str, Tuple[str, Callable[..., Any]]] = {
 
 # --- MAIN RENDER PIPELINE ---
 def generate_video(
-    filepath: str, output_path: str, effect_id: str, video_conf: Dict[str, Any]
+    filepath: str, output_path: str, effect_id: str, video_conf: dict[str, Any]
 ) -> None:
     """
-    Renders an oscilloscope visualization video from a data file.
+    Render an oscilloscope visualization video from a data file.
 
     Loads the signal, applies the selected visual effect, stabilizes the
     waveform using a software trigger, and encodes the output via FFmpeg.
@@ -179,7 +175,7 @@ def generate_video(
 
     if effect_id not in EFFECTS:
         effect_id = "2"
-    effect_name, setup_func = EFFECTS[effect_id]
+    _effect_name, setup_func = EFFECTS[effect_id]
 
     # Initialize Plot
     fig, ax, lines, update_func = setup_func(window_size, fs, video_conf)
