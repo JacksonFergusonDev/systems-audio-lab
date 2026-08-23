@@ -1,7 +1,6 @@
 repos:
-  # 1. Generic hooks (configured to IGNORE Python)
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+  # Generic hooks (configured to IGNORE Python)
+  - repo: builtin
     hooks:
       - id: trailing-whitespace
         exclude: \.(py|ipynb)$
@@ -11,14 +10,32 @@ repos:
         exclude: \.ipynb$
       - id: check-added-large-files
         exclude: \.ipynb$
+      - id: check-merge-conflict
+      - id: check-toml
 
-  # 2. Python-specific toolchain
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.14
+  # Local Python Toolchain (Managed via uv.lock)
+  - repo: local
     hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+        pass_filenames: false
+
       - id: ruff-format
-      - id: ruff
-        args: [ --fix ]
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: true
 
   # Markdown linting
   - repo: https://github.com/DavidAnson/markdownlint-cli2
