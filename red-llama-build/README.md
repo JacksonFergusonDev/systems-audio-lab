@@ -14,19 +14,21 @@ Midway through the planning phase of this pedal, I realized that manually cross-
 I paused fabrication to develop **Star Ground**, a Python-based full-stack logistics engine that treats hardware Bill of Materials (BOMs) as strict data objects.
 
 ### The Pipeline
+
 The contents of the `procurement/` directory are **not** manually compiled. They are the deterministic outputs of the Star Ground engine:
 
-1.  **Ingestion:** The tool parsed the raw PDF documentation for the Red Llama.
-2.  **Inventory Subtraction:** It compared the required BOM against my local `inventory.csv` (my "digital twin").
-3.  **Heuristic Buffering:** It applied "Nerd Economics" (yield management algorithms) to calculate safety stock—automatically padding resistors and critical silicon while keeping expensive electromechanical parts at a 1:1 ratio.
-4.  **Artifact Generation:** It compiled the final purchasing manifest and Z-height sorted assembly manuals.
+1. **Ingestion:** The tool parsed the raw PDF documentation for the Red Llama.
+1. **Inventory Subtraction:** It compared the required BOM against my local `inventory.csv` (my "digital twin").
+1. **Heuristic Buffering:** It applied "Nerd Economics" (yield management algorithms) to calculate safety stock—automatically padding resistors and critical silicon while keeping expensive electromechanical parts at a 1:1 ratio.
+1. **Artifact Generation:** It compiled the final purchasing manifest and Z-height sorted assembly manuals.
 
 **🚀 [View the Tool / Live App](https://star-ground.streamlit.app/)**
 
 ### Generated Artifacts
-* **`Shopping List.csv`**: The aggregated, algorithmic order list used to purchase components from Tayda Electronics.
-* **`My Inventory Updated.csv`**: The post-build state of the local inventory.
-* **`Field Manuals/`**: Rendered PDF instructions that reorganize the assembly order by component height (Resistors $\rightarrow$ Sockets $\rightarrow$ Capacitors) for streamlined soldering.
+
+- **`Shopping List.csv`**: The aggregated, algorithmic order list used to purchase components from Tayda Electronics.
+- **`My Inventory Updated.csv`**: The post-build state of the local inventory.
+- **`Field Manuals/`**: Rendered PDF instructions that reorganize the assembly order by component height (Resistors $\rightarrow$ Sockets $\rightarrow$ Capacitors) for streamlined soldering.
 
 ---
 
@@ -34,8 +36,8 @@ The contents of the `procurement/` directory are **not** manually compiled. They
 
 The Red Llama is topologically distinct among overdrive circuits as it eschews standard op-amps and discrete clipping diodes in favor of abusing the **CD4049 CMOS Hex Inverter**.
 
-* **Gain Stages:** Two inverter stages are cascaded in series.
-* **Clipping Mechanism:** By running the CMOS inverters with high negative feedback, they are forced into a linear amplification region. When driven hard, the internal push-pull MOSFETs hit the power rails, creating a soft, tube-like saturation that eventually squares off into a hard fuzz.
+- **Gain Stages:** Two inverter stages are cascaded in series.
+- **Clipping Mechanism:** By running the CMOS inverters with high negative feedback, they are forced into a linear amplification region. When driven hard, the internal push-pull MOSFETs hit the power rails, creating a soft, tube-like saturation that eventually squares off into a hard fuzz.
 
 ## 3. Engineering Deviations
 

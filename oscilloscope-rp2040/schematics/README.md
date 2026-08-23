@@ -14,11 +14,13 @@ The circuit design is broken down into five distinct stages to ensure signal int
 *See [`exports/`](./exports/) for PDF versions and the compact schematic view.*
 
 ### 1. Input Protection
+
 **Component:** $R_{prot}$ ($10k\Omega$)
 
 The input stage is the first line of defense. I placed a $10k\Omega$ series resistor immediately at the input jack. In the event of a high-voltage transient or accidental connection to a modular synth rail ($\pm 12V$), this resistor limits the current flowing into the clamping diodes, preventing thermal destruction of the protection stage.
 
 ### 2. AC Coupling (High-Pass Filter)
+
 **Component:** $C_{ac}$ ($220nF$)
 
 For audio analysis, we must block DC offsets to maximize dynamic range within the 3.3V rail. I selected a $220nF$ polyester film capacitor. The corner frequency ($f_c$) depends on the input impedance of the subsequent stage.
@@ -29,24 +31,27 @@ $$f_c = \frac{1}{2\pi R C} = \frac{1}{2\pi \cdot 220k\Omega \cdot 220nF} \approx
 This ensures a flat response well below the audible floor (20Hz). Even in low-impedance attenuation modes, the cutoff remains acceptable for spectral analysis.
 
 ### 3. Attenuation & Mode Selection
+
 **Components:** $R_{div1}$, $R_{div2}$, Jumper Header
 
 This stage defines the gain structure. By socketing $R_{div1}$ and $R_{div2}$, the attenuation ratio ($A_v$) can be tuned for specific sources (e.g., 0.1x for Modular, 0.5x for Line Level).
 
 I implemented a **Switched Reference Topology** here to solve a critical impedance conflict. Initially, tying $R_{div2}$ to Ground while injecting bias separately created a parasitic voltage divider that collapsed the bias voltage.
 
-* **Audio Mode:** The jumper connects the bottom of $R_{div2}$ to $V_{mid}$ ($1.65V$). The signal "sees" virtual ground, preserving the gain ratio.
-* **DC Mode:** The jumper connects to GND, forming a standard resistive divider for unipolar sensing (0-5V sensors).
+- **Audio Mode:** The jumper connects the bottom of $R_{div2}$ to $V_{mid}$ ($1.65V$). The signal "sees" virtual ground, preserving the gain ratio.
+- **DC Mode:** The jumper connects to GND, forming a standard resistive divider for unipolar sensing (0-5V sensors).
 
 ### 4. Bias Network
+
 **Components:** $R_{bias1}$, $R_{bias2}$, $C_{filter}$, $R_{inject}$
 
 The RP2040 ADC requires a signal centered at $1.65V$ (half-rail) to read AC waveforms. I used a stiff voltage divider ($100k\Omega$ pair) filtered by a $10\mu F$ electrolytic capacitor to generate a stable quiet rail ($V_{mid}$).
 
-* **For High-Z Instruments:** We leave the attenuator sockets empty and install $R_{inject}$ ($220k\Omega$) to weakly bias the signal without loading the guitar pickups.
-* **For Line Sources:** We remove $R_{inject}$ and rely on the Switched Reference connection at Stage 3.
+- **For High-Z Instruments:** We leave the attenuator sockets empty and install $R_{inject}$ ($220k\Omega$) to weakly bias the signal without loading the guitar pickups.
+- **For Line Sources:** We remove $R_{inject}$ and rely on the Switched Reference connection at Stage 3.
 
 ### 5. Clamping & ADC Driver
+
 **Components:** $D_{top}$, $D_{bot}$, $R_{clamp}$
 
 The final stage protects the microcontroller silicon. Two 1N4148 switching diodes hard-clamp the signal voltage to the rails (plus forward voltage drop, $\approx -0.3V$ to $3.6V$). A final $10k\Omega$ resistor ($R_{clamp}$) limits current into the ADC's internal sampling capacitor, protecting against latch-up conditions if the clamping diodes are momentarily overwhelmed.
@@ -84,11 +89,13 @@ The final stage protects the microcontroller silicon. Two 1N4148 switching diode
 #### Project Total: $4.14
 
 ### Socket Breakdown
+
 To facilitate the modular design, cut the 40-pin header strip into the following sections:
-* **1x2 Pin:** For $C_{ac}$
-* **1x2 Pin:** For $R_{div1}$
-* **1x2 Pin:** For $R_{div2}$
-* **1x2 Pin:** For $R_{inject}$
+
+- **1x2 Pin:** For $C_{ac}$
+- **1x2 Pin:** For $R_{div1}$
+- **1x2 Pin:** For $R_{div2}$
+- **1x2 Pin:** For $R_{inject}$
 
 ---
 
@@ -104,16 +111,18 @@ The board functionality is determined by the socketed components and the positio
 
 ## Assembly & Calibration Notes
 
-1.  **Ground Loops:** If connecting to mains-powered gear (like guitar pedalboards), power the RP2040 from an isolated laptop (battery mode) to avoid creating a ground loop with the building mains.
-2.  **Diodes:** Observe polarity. The **Black Band** (Cathode) on $D_{top}$ points to 3.3V. The **Black Band** on $D_{bot}$ points to the Signal Line.
-3.  **Electrolytic Cap:** The **White Stripe** (Negative) on $C_{filter}$ must connect to Ground.
-4.  **RP2040 Installation:** Install headers on a breadboard first, place the RP2040 on top, and solder. This ensures the pins remain perfectly vertical and aligned.
+1. **Ground Loops:** If connecting to mains-powered gear (like guitar pedalboards), power the RP2040 from an isolated laptop (battery mode) to avoid creating a ground loop with the building mains.
+1. **Diodes:** Observe polarity. The **Black Band** (Cathode) on $D_{top}$ points to 3.3V. The **Black Band** on $D_{bot}$ points to the Signal Line.
+1. **Electrolytic Cap:** The **White Stripe** (Negative) on $C_{filter}$ must connect to Ground.
+1. **RP2040 Installation:** Install headers on a breadboard first, place the RP2040 on top, and solder. This ensures the pins remain perfectly vertical and aligned.
 
 ### Sample Rate Calibration
+
 The RP2040 internal clock is stable, but MicroPython overhead introduces deterministic latency. To calibrate the exact sampling rate ($F_s$) without an external function generator:
-1.  Touch the tip of the input jack to couple 60Hz mains hum from the environment.
-2.  Run the FFT analysis script.
-3.  Measure the offset of the peak from 60.0Hz.
-4.  Apply the scalar correction factor $\alpha = \frac{60.0}{f_{meas}}$.
+
+1. Touch the tip of the input jack to couple 60Hz mains hum from the environment.
+1. Run the FFT analysis script.
+1. Measure the offset of the peak from 60.0Hz.
+1. Apply the scalar correction factor $\alpha = \frac{60.0}{f_{meas}}$.
 
 *For this specific build, the calibrated $F_s \approx 97.8 kHz$.*

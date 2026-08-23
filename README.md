@@ -15,19 +15,21 @@
 
 </div>
 
-### 📡 The Mission: Vertical Integration
+## 📡 The Mission: Vertical Integration
 
 Most audio analysis relies on "black box" equipment. This project builds the **entire signal chain** from scratch:
-1.  **Power:** A custom linear regulator to eliminate switching noise.
-2.  **Device:** A discrete CMOS overdrive circuit to generate soft-clipping distortion.
-3.  **Probe:** A custom RP2040 oscilloscope to capture the waveform.
-4.  **Analysis:** A Python pipeline to deconvolve the Transfer Function.
+
+1. **Power:** A custom linear regulator to eliminate switching noise.
+1. **Device:** A discrete CMOS overdrive circuit to generate soft-clipping distortion.
+1. **Probe:** A custom RP2040 oscilloscope to capture the waveform.
+1. **Analysis:** A Python pipeline to deconvolve the Transfer Function.
 
 By owning every stage of the pipeline, this system eliminates the "dependency hell" of unknown hardware variables, allowing for precise correlation between **circuit topology** and **spectral output**.
 
 ---
 
 ### 📄 [Read the Full Engineering Report (PDF)](docs/systems_audio_tech_report.pdf)
+
 *A detailed technical report covering the full systems engineering approach: logistics automation, power supply design, analog circuit fabrication, and custom DAQ instrumentation for spectral validation.*
 
 ---
@@ -36,8 +38,8 @@ By owning every stage of the pipeline, this system eliminates the "dependency he
 
 Hardware and basic signal analysis are **complete and validated**. Transfer function analysis is under active development.
 
-* **Completed:** Waveform capture, harmonic analysis confirming soft-clipping topology and harmonic asymmetry (Notebooks `01` & `02`).
-* **In Progress:** Implementing **Exponential Sine Sweep (ESS) deconvolution** in Notebook `04` to separate linear frequency response from harmonic distortion components, enabling automated Bode plot generation.
+- **Completed:** Waveform capture, harmonic analysis confirming soft-clipping topology and harmonic asymmetry (Notebooks `01` & `02`).
+- **In Progress:** Implementing **Exponential Sine Sweep (ESS) deconvolution** in Notebook `04` to separate linear frequency response from harmonic distortion components, enabling automated Bode plot generation.
 
 ---
 
@@ -50,8 +52,8 @@ Using the custom RP2040 oscilloscope, I captured the saturation behavior of the 
 
 ![Topology Analysis](docs/figures/fig_analysis_topology.svg)
 
-1.  **Time Domain (Left):** Shows **"soft knee"** compression. Unlike diodes which clip sharply at $V_f$, the CMOS chips round off the waveform smoothly.
-2.  **Frequency Domain (Right):** The spectrum reveals a dominant **2nd harmonic** (one octave above fundamental). This even-order harmonic content is consistent with the "tube sound" hypothesis, mathematically validating the circuit design.
+1. **Time Domain (Left):** Shows **"soft knee"** compression. Unlike diodes which clip sharply at $V_f$, the CMOS chips round off the waveform smoothly.
+1. **Frequency Domain (Right):** The spectrum reveals a dominant **2nd harmonic** (one octave above fundamental). This even-order harmonic content is consistent with the "tube sound" hypothesis, mathematically validating the circuit design.
 
 ---
 
@@ -60,27 +62,31 @@ Using the custom RP2040 oscilloscope, I captured the saturation behavior of the 
 This project consists of four interconnected subsystems, each enabling the next.
 
 ### 1. [Logistics: Star Ground](https://github.com/JacksonFergusonDev/star-ground)
-* **The Problem:** Manual BOM management leads to "Logistical Entropy" (missing parts/delays).
-* **The Solution:** A deterministic dependency manager that parses PDF BOMs and calculates strict safety stock levels.
-* **Status:** *Complete / External Repository*
+
+- **The Problem:** Manual BOM management leads to "Logistical Entropy" (missing parts/delays).
+- **The Solution:** A deterministic dependency manager that parses PDF BOMs and calculates strict safety stock levels.
+- **Status:** *Complete / External Repository*
 
 ### 2. [Infrastructure: Linear Power Regulator](power-regulator-12v-to-9v/)
-* **The Problem:** Cheap wall adapters introduce switching noise (ripple) that pollutes sensitive measurements.
-* **The Solution:** A custom 12V → 9V linear voltage regulator with thermal management to support high-current loads.
-* **Key Components:** L7809CV regulator, Schottky diode for reverse polarity protection, heatsink with ventilation.
+
+- **The Problem:** Cheap wall adapters introduce switching noise (ripple) that pollutes sensitive measurements.
+- **The Solution:** A custom 12V → 9V linear voltage regulator with thermal management to support high-current loads.
+- **Key Components:** L7809CV regulator, Schottky diode for reverse polarity protection, heatsink with ventilation.
 
 ### 3. [The Device: Red Llama Overdrive](red-llama-build/)
-* **The Problem:** Need a "Device Under Test" (DUT) with predictable non-linearity.
-* **The Solution:** Built a Red Llama clone using CD4049 CMOS inverter chips.
-* **Modification:** Replaced standard diodes with Schottky (1N5817) to recover 0.4V of headroom.
+
+- **The Problem:** Need a "Device Under Test" (DUT) with predictable non-linearity.
+- **The Solution:** Built a Red Llama clone using CD4049 CMOS inverter chips.
+- **Modification:** Replaced standard diodes with Schottky (1N5817) to recover 0.4V of headroom.
 
 <img src="red-llama-build/assets/red_llama_complete.jpg" width="52%" alt="Red Llama Build"> <img src="red-llama-build/assets/red_llama_effects_board_only.jpg" width="45%" alt="Red Llama Circuit">
 
 ### 4. [Instrumentation: RP2040 Oscilloscope](oscilloscope-rp2040/)
-* **The Problem:** Needed to measure the harmonic content of the overdrive circuit but didn't have an oscilloscope.
-* **The Solution:** Built a USB oscilloscope around the RP2040 microcontroller with custom analog signal conditioning.
-* **Architecture:** Store-and-forward firmware separates high-speed sampling from USB transmission to avoid data loss.
-* **Performance:** 97.8 kSps (calibrated against 60 Hz mains), 12-bit resolution, 1.3 mV noise floor.
+
+- **The Problem:** Needed to measure the harmonic content of the overdrive circuit but didn't have an oscilloscope.
+- **The Solution:** Built a USB oscilloscope around the RP2040 microcontroller with custom analog signal conditioning.
+- **Architecture:** Store-and-forward firmware separates high-speed sampling from USB transmission to avoid data loss.
+- **Performance:** 97.8 kSps (calibrated against 60 Hz mains), 12-bit resolution, 1.3 mV noise floor.
 
 <img src="oscilloscope-rp2040/assets/oscilloscope_1.0_gain.jpg" width="45%" alt="Oscilloscope Build"> <img src="oscilloscope-rp2040/assets/oscilloscope_screen.png" width="54%" alt="Oscilloscope Screen">
 
@@ -98,6 +104,7 @@ cd systems-audio-lab
 ```
 
 ### 2. Install Environment
+
 We use an editable install so changes to the `sysaudio` library are immediately reflected in the notebooks.
 
 ```bash
@@ -110,6 +117,7 @@ uv pip install -e .
 ```
 
 ### 3. Usage Options
+
 Option A: Interactive Analysis (Jupyter) Launch the lab to view the engineering reports and signal processing pipelines.
 
 ```bash
@@ -159,33 +167,37 @@ With the measurement chain validated, the next iteration focuses on **Determinis
 
 ### Planned Improvements
 
-**1. Deterministic Transport (Ethernet vs USB)**
-* **The Problem:** USB is non-deterministic; the device must wait for the host OS to poll for data (1ms - 125µs intervals).
-* **The Fix:** Implement an **Ethernet PHY (W5500/LAN8720)**.
-* **The Result:** The device pushes data via **UDP Streaming** immediately upon acquisition, decoupling the sampling clock from the host OS scheduler.
+#### 1. Deterministic Transport (Ethernet vs USB)
 
-**2. Zero-Copy DMA Architecture**
-* **The Problem:** Moving data from ADC to memory via CPU interrupts consumes cycles and risks dropping samples during high load.
-* **The Fix:** Implement a **Direct Memory Access (DMA)** pipeline.
-* **The Result:** The ADC writes directly to a ring buffer in RAM, and a second DMA channel feeds the Ethernet MAC. The CPU never touches the sample data, guaranteeing cycle-accurate throughput.
+- **The Problem:** USB is non-deterministic; the device must wait for the host OS to poll for data (1ms - 125µs intervals).
+- **The Fix:** Implement an **Ethernet PHY (W5500/LAN8720)**.
+- **The Result:** The device pushes data via **UDP Streaming** immediately upon acquisition, decoupling the sampling clock from the host OS scheduler.
 
-**3. Signal Chain Upgrade**
-* **External ADC:** Replace the RP2040's internal 12-bit ADC with a **24-bit Audio Codec** (I2S). This increases dynamic range for measuring low-level harmonics (-90dB noise floor).
-* **On-board DAC:** Integrate a DAC (PCM5102) to generate test signals directly from hardware, enabling self-contained frequency sweeps.
+#### 2. Zero-Copy DMA Architecture
 
-**4. Programmable Input Stage**
-* **Software-Controlled Gain:** Replace manual jumpers with a Programmable Gain Amplifier (PGA).
-* **Automated Characterization:** Implement a "One-Click Bode Plot" routine: the system generates a sweep, captures the response via DMA, and streams the data via UDP without manual intervention.
+- **The Problem:** Moving data from ADC to memory via CPU interrupts consumes cycles and risks dropping samples during high load.
+- **The Fix:** Implement a **Direct Memory Access (DMA)** pipeline.
+- **The Result:** The ADC writes directly to a ring buffer in RAM, and a second DMA channel feeds the Ethernet MAC. The CPU never touches the sample data, guaranteeing cycle-accurate throughput.
+
+#### 3. Signal Chain Upgrade
+
+- **External ADC:** Replace the RP2040's internal 12-bit ADC with a **24-bit Audio Codec** (I2S). This increases dynamic range for measuring low-level harmonics (-90dB noise floor).
+- **On-board DAC:** Integrate a DAC (PCM5102) to generate test signals directly from hardware, enabling self-contained frequency sweeps.
+
+#### 4. Programmable Input Stage
+
+- **Software-Controlled Gain:** Replace manual jumpers with a Programmable Gain Amplifier (PGA).
+- **Automated Characterization:** Implement a "One-Click Bode Plot" routine: the system generates a sweep, captures the response via DMA, and streams the data via UDP without manual intervention.
 
 ---
 
 ## 📧 Contact
 
-**Jackson Ferguson**
+### Jackson Ferguson
 
--   **GitHub:** [@JacksonFergusonDev](https://github.com/JacksonFergusonDev)
--   **LinkedIn:** [Jackson Ferguson](https://www.linkedin.com/in/jackson--ferguson/)
--   **Email:** jackson.ferguson0@gmail.com
+- **GitHub:** [@JacksonFergusonDev](https://github.com/JacksonFergusonDev)
+- **LinkedIn:** [Jackson Ferguson](https://www.linkedin.com/in/jackson--ferguson/)
+- **Email:** <jackson.ferguson0@gmail.com>
 
 ---
 

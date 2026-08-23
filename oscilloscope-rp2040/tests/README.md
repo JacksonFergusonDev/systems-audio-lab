@@ -1,6 +1,6 @@
-## Contents
+# Contents
 
-* **`test_imports.py`**: A "smoke test" that attempts to import the `src` package. If this fails, it usually indicates a circular dependency or a missing `__init__.py` file in the module graph.
+- **`test_imports.py`**: A "smoke test" that attempts to import the `src` package. If this fails, it usually indicates a circular dependency or a missing `__init__.py` file in the module graph.
 
 ## Running Tests
 

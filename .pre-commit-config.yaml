@@ -19,3 +19,10 @@ repos:
       - id: ruff-format
       - id: ruff
         args: [ --fix ]
+
+  # Markdown linting
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.2
+    hooks:
+      - id: markdownlint-cli2
+        args: ["--fix"]

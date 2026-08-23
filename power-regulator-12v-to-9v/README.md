@@ -5,11 +5,13 @@
 **Role:** Clean Power Source for the Red Llama Build
 
 ## 1. Project Motivation
+
 Before building the Red Llama (or any guitar pedal), I needed a power source. Guitar pedals typically require a **9V Center-Negative** supply with extremely low noise.
 
 I had plenty of cheap generic 12V power bricks lying around, but they are unsuitable for audio for two reasons:
-1.  **Voltage:** 12V exceeds the standard 9V rating for most pedals.
-2.  **Noise:** Cheap wall warts are usually Switch Mode Power Supplies (SMPS) with high-frequency ripple that leaks into the audio path.
+
+1. **Voltage:** 12V exceeds the standard 9V rating for most pedals.
+1. **Noise:** Cheap wall warts are usually Switch Mode Power Supplies (SMPS) with high-frequency ripple that leaks into the audio path.
 
 Rather than buying a dedicated pedal supply, I decided to build a **Linear Voltage Regulator**. This served as my "Hello World" into discrete electronics—a low-risk, useful tool to validate my soldering and enclosure fabrication skills before attempting the audio circuit.
 
@@ -24,9 +26,10 @@ The core engineering constraint of a linear regulator is heat dissipation.
 $$P_{dissipated} = (V_{in} - V_{out}) \times I_{load}$$
 
 Given my input is $12V$ and output is $9V$, the regulator drops $3V$.
-* **For the Red Llama:** The current draw is negligible ($<10mA$). $P \approx 0.03W$. The regulator would run cool even without a heatsink.
 
-* **Future Proofing (Digital Pedals):** Digital reverbs or delays can draw upwards of $400mA$.
+- **For the Red Llama:** The current draw is negligible ($<10mA$). $P \approx 0.03W$. The regulator would run cool even without a heatsink.
+
+- **Future Proofing (Digital Pedals):** Digital reverbs or delays can draw upwards of $400mA$.
 
     $$P_{max} \approx 3V \times 0.4A = 1.2W$$
 
@@ -38,9 +41,9 @@ Adding ambient temp ($25^\circ C$), the silicon would hit $\approx 103^\circ C$.
 
 **The Solution:**
 
-1.  **Heatsink:** I added a screw-on TO-220 heatsink. This drastically lowers the thermal resistance, keeping the device safe even at higher current loads.
+1. **Heatsink:** I added a screw-on TO-220 heatsink. This drastically lowers the thermal resistance, keeping the device safe even at higher current loads.
 
-2.  **Convection Cooling:** ABS plastic is a thermal insulator. A heatsink inside a sealed plastic box just heats the air inside until the box melts. I drilled ventilation holes in the top of the enclosure to establish a convection current, allowing hot air to escape and cool air to enter.
+1. **Convection Cooling:** ABS plastic is a thermal insulator. A heatsink inside a sealed plastic box just heats the air inside until the box melts. I drilled ventilation holes in the top of the enclosure to establish a convection current, allowing hot air to escape and cool air to enter.
 
 ## 3. Component Selection
 
@@ -64,7 +67,7 @@ Everything was sourced from [Tayda Electronics](https://www.taydaelectronics.com
 | **$C_{out1}$** | **10µF** | 10uF 50V 105C Radial Electrolytic | A-4554 | $0.02 | 1 | $0.02 | Bulk Output |
 | **$C_{in2}, C_{out2}$** | **100nF** | 100nF 0.1uF 100V 5% Polyester Box | A-564 | $0.10 | 2 | $0.20 | HF Filtering |
 | | **Jack (Fem)** | DC Power Jack 2.1mm Enclosed Frame | A-2237 | $0.13 | 1 | $0.13 | Panel Mount |
-| | **Plug (Male)**| DC Power Jack 2.1x5.5mm Male With Wire | A-6806 | $0.15 | 1 | $0.15 | Output Pigtail |
+| | **Plug (Male)** | DC Power Jack 2.1x5.5mm Male With Wire | A-6806 | $0.15 | 1 | $0.15 | Output Pigtail |
 | | **Enclosure** | Black Color Plastic Project Box 03 | A-2383 | $2.50 | 1 | $2.50 | ABS Plastic |
 | | **Heat Sink** | Heat Sink TO-220 10 Fins 1 Inch | A-1512 | $0.24 | 1 | $0.24 | For U1 |
 | | **Screw** | M3 Hexagon Socket Head Cap Screw | A-6379 | $0.10 | 1 | $0.10 | HS Mounting |
