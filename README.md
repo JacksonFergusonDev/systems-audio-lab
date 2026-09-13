@@ -28,7 +28,7 @@ By owning every stage of the pipeline, this system eliminates the "dependency he
 
 ---
 
-### 📄 [Read the Full Engineering Report (PDF)](docs/systems_audio_tech_report.pdf)
+### 📄 [Read the Full Engineering Report (PDF)](https://raw.githubusercontent.com/JacksonFergusonDev/systems-audio-lab/main/docs/systems_audio_tech_report.pdf)
 
 *A detailed technical report covering the full systems engineering approach: logistics automation, power supply design, analog circuit fabrication, and custom DAQ instrumentation for spectral validation.*
 
@@ -193,14 +193,12 @@ With the measurement chain validated, the next iteration focuses on **Determinis
 
 ## 📧 Contact
 
-### Jackson Ferguson
-
-- **GitHub:** [@JacksonFergusonDev](https://github.com/JacksonFergusonDev)
-- **LinkedIn:** [Jackson Ferguson](https://www.linkedin.com/in/jackson--ferguson/)
-- **Email:** <jackson.ferguson0@gmail.com>
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/JacksonFergusonDev)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jackson--ferguson/)
+[![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:jackson.ferguson0@gmail.com)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
