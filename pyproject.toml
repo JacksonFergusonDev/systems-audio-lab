@@ -19,6 +19,9 @@ dependencies = [
     "sounddevice>=0.5.5",
 ]
 
+[project.urls]
+Author = "https://jacksonferguson.me"
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
