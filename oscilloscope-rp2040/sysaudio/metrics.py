@@ -298,9 +298,10 @@ def generate_inverse_filter(
     phase = b * (r**t - 1.0)
     sweep = np.sin(phase)
 
-    # 2. Generate Amplitude Envelope (Blue Noise Slope)
-    # Corrects pink noise spectrum of log sweep.
-    w = np.exp(t * np.log(r) / duration)
+    # 2. Generate Amplitude Envelope (+6 dB/octave before reversal)
+    # Instantaneous frequency is f_start * r**t, so weighting by r**t (i.e. f)
+    # cancels the 1/f power spectrum shared by the sweep and its reversal.
+    w = r**t
 
     # 3. Create Inverse
     # Time reverse the weighted sweep to place high frequencies at the start.
