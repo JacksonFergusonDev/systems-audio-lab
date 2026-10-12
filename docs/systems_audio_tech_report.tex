@@ -801,19 +801,19 @@ Phase II replaced passive instrument capture with active signal injection, using
   \item \textbf{Analysis:} Chunked harmonic fitting (Section \ref{sec:transfer}) recovers the frequency response and harmonic distortion versus frequency from stream-mode captures, despite the untimed gaps between blocks.
 \end{itemize}
 
-Phase II also exposed the main limitation of the v1.0 instrument: stream mode cannot record a phase-continuous signal longer than one burst. This rules out phase measurement and ESS deconvolution, and directly motivates the continuous-acquisition architecture proposed below.
+Phase II also exposed the main limitation of the v0 prototype: stream mode cannot record a phase-continuous signal longer than one burst. This rules out phase measurement and ESS deconvolution, and directly motivates the continuous-acquisition architecture proposed below.
 
-\section{Future Roadmap: The Silicon Revision (v2.0)}
-The current device, constructed on perfboard with discrete modules, serves as a validated prototype (v1.0). While effective for characterizing soft-clipping topologies, the reliance on the RP2040's internal 12-bit ADC and manual jumper configuration limits its utility as a precision laboratory standard.
+\section{Future Roadmap: The Silicon Revision (v1.0)}
+The current device, constructed on perfboard with discrete modules, serves as a validated prototype (v0). While effective for characterizing soft-clipping topologies, the reliance on the RP2040's internal 12-bit ADC and manual jumper configuration limits its utility as a precision laboratory standard.
 
-Based on the empirical data collected in this report, a comprehensive "Silicon Revision" (v2.0) is proposed to transition the system from a development tool to an autonomous measurement engine.
+Based on the empirical data collected in this report, a comprehensive "Silicon Revision" (v1.0) is proposed as the first product iteration, transitioning the system from a development tool to an autonomous measurement engine.
 
 \subsection{Hardware Architecture}
 The next iteration will migrate from modular sub-assemblies to a unified \textbf{4-layer PCB} utilizing Surface Mount Devices (SMD).
 \begin{itemize}
   \item \textbf{Noise Floor:} A dedicated internal ground plane will replace the star-ground wiring to further suppress Electromagnetic Interference (EMI), targeting a noise floor of $<-80\text{dB}$.
   \item \textbf{Connectivity:} Standard 0.1" headers will be replaced with shielded \textbf{BNC connectors} to interface with standard oscilloscope probes.
-  \item \textbf{Continuous Acquisition:} DMA-driven, double-buffered sampling will stream data without the inter-block gaps of the v1.0 request--response protocol (Section \ref{sec:transfer}), enabling phase-continuous captures of arbitrary length.
+  \item \textbf{Continuous Acquisition:} DMA-driven, double-buffered sampling will stream data without the inter-block gaps of the prototype's request--response protocol (Section \ref{sec:transfer}), enabling phase-continuous captures of arbitrary length.
 \end{itemize}
 
 \subsection{Signal Chain Evolution}
@@ -824,14 +824,14 @@ To achieve \textit{Audio Analyzer} grade performance, the internal data converte
 \end{itemize}
 
 \subsection{Programmable Analog Front End (AFE)}
-The current manual configuration (physical jumpers for Gain and AC/DC coupling) introduces mechanical wear and prevents remote automation. The v2.0 AFE will utilize:
+The current manual configuration (physical jumpers for Gain and AC/DC coupling) introduces mechanical wear and prevents remote automation. The v1.0 AFE will utilize:
 \begin{itemize}
   \item \textbf{Relay Switching:} To toggle between AC and DC coupling modes without signal degradation.
   \item \textbf{Programmable Gain Amplifier (PGA):} To provide software-controlled attenuation, enabling the system to auto-range between millivolt-level guitar pickups and high-voltage modular synthesizer rails ($\pm 12\text{V}$).
 \end{itemize}
 
 \section{Closing Statement}
-The \textbf{Systems Audio Lab} project stands as a proof-of-concept for the \textit{systems} approach to maker-electronics. By refusing to treat the supply chain, power delivery, and validation as externalities, the project yielded a device with a verified noise floor and a mathematically characterized distortion profile. The proposed evolution to v2.0 demonstrates that the distinction between software code and silicon hardware is increasingly arbitrary; both are simply distinct layers of the same engineering stack.
+The \textbf{Systems Audio Lab} project stands as a proof-of-concept for the \textit{systems} approach to maker-electronics. By refusing to treat the supply chain, power delivery, and validation as externalities, the project yielded a device with a verified noise floor and a mathematically characterized distortion profile. The proposed evolution to v1.0 demonstrates that the distinction between software code and silicon hardware is increasingly arbitrary; both are simply distinct layers of the same engineering stack.
 
 % =============================================================================
 % APPENDIX

@@ -6,7 +6,7 @@
 **A vertically integrated audio analysis platform.**
 
 ![Analysis Status](https://img.shields.io/badge/analysis-complete-white?style=flat-square&color=white&labelColor=black)
-![Version](https://img.shields.io/badge/version-v1.0__prototype-white?style=flat-square&color=white&labelColor=black)
+![Version](https://img.shields.io/badge/version-v0__prototype-white?style=flat-square&color=white&labelColor=black)
 ![Python](https://img.shields.io/badge/python-3.13-white?style=flat-square&color=white&labelColor=black)
 [![Ruff](https://img.shields.io/badge/style-ruff-white?style=flat-square&color=white&labelColor=black)](https://github.com/astral-sh/ruff)
 [![Mypy](https://img.shields.io/badge/mypy-checked-white?style=flat-square&color=white&labelColor=black)](https://mypy-lang.org/)
@@ -148,11 +148,11 @@ python oscilloscope-rp2040/scripts/capture/record.py
 
 ---
 
-## 🔮 Future Roadmap: Silicon Revision (v2.0)
+## 🔮 Future Roadmap: Silicon Revision (v1.0)
 
 With the measurement chain validated, the next iteration focuses on **Determinism** and **Automation**.
 
-**Current State:** The v1.0 oscilloscope relies on CPU-polled USB Serial for data transmission. This introduces non-deterministic latency (jitter) dependent on the host OS scheduler.
+**Current State:** The v0 prototype oscilloscope relies on CPU-polled USB Serial for data transmission. This introduces non-deterministic latency (jitter) dependent on the host OS scheduler.
 
 **The Goal:** Design a custom PCB that implements a **Zero-Copy Architecture**, ensuring that sample timing is defined purely by hardware clocks, not software loops.
 
