@@ -81,6 +81,9 @@
   language=Python
 }
 \lstset{style=pythonstyle}
+% Ignore emoji variation selectors (U+FE0F) in listed source; the harf emoji
+% fallback crashes on them.
+\catcode"FE0F=9
 
 % --- HEADER/FOOTER ---
 \pagestyle{fancy}
