@@ -1,4 +1,4 @@
-# Source Library Architecture (`src/`)
+# Source Library Architecture (`sysaudio/`)
 
 This directory contains the core Python package that powers the RP2040 Data Acquisition System. It is architected as a modular library, separating hardware abstraction, signal processing, and data persistence into discrete, testable units.
 
@@ -67,20 +67,27 @@ Handles deterministic signal generation and hardware playback for System Identif
 - **`generate_log_sweep`**: Mathematically precise logarithmic sine sweep generation for transfer function analysis.
 - **Device Management:** Wraps `sounddevice` to handle audio stream callbacks and device selection.
 
-### 9. Scientific Analysis (`analysis.py`)
+### 9. Scientific Analysis (`metrics.py`, `plots.py`)
 
-Contains the logic for generating publication-quality figures for the Design Journal.
+`metrics.py` computes analysis data; `plots.py` turns it into publication-quality figures for the technical report.
 
 - **Topology visualization:** Plots phase-locked comparisons of Input vs. Output to reveal saturation curves.
 - **Harmonic Fingerprinting:** Generates normalized histograms to quantify Even vs. Odd harmonic distortion.
 - **Export Utility:** `save_pdf_svg` handles the output of vector graphics for LaTeX integration.
+
+### 10. Chunked Sweep Analysis (`chunked_sweep.py`)
+
+Recovers transfer functions from stream-mode sweep captures, whose 1024-sample blocks are separated by untimed gaps.
+
+- **`analyze_chunked_sweep`**: Recovers each block's sweep position from a constant-period fit, then least-squares fits the log-sweep phase model (fundamental + harmonics) per block.
+- **`compute_chunked_bode`**: Compares source and DUT captures on a common log-frequency grid, returning normalized gain and harmonics relative to the fundamental.
 
 ## Usage
 
 This package is not intended to be run directly. Import it into your scripts as follows:
 
 ```python
-from src import daq, dsp, config
+from sysaudio import daq, dsp, config
 
 with daq.DAQInterface() as device:
     data = device.capture_burst()

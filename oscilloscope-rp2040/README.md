@@ -82,8 +82,8 @@ The scientific workbench.
   - *Set A:* Linearity (Triangle Wave).
   - *Set B:* Bandwidth (Log Sine Sweep).
   - *Set C:* Standard THD (1kHz Sine).
-- **`04_transfer_analysis.ipynb`**: System Identification (In Progress).
-  - *Bode Response:* Magnitude and Phase analysis.
+- **`04_transfer_analysis.ipynb`**: System Identification.
+  - *Bode Response:* Magnitude response and harmonics vs. frequency (chunked sweep fitting).
   - *Transfer Curves:* Input vs. Output linearity mapping.
   - *THD Fingerprinting:* Harmonic distortion profiling.
 
@@ -147,7 +147,7 @@ python oscilloscope-rp2040/scripts/capture/master_transfer.py sweep --duration 5
 
 ## Future Development
 
-This documentation describes the **v1.0 Prototype** architecture.
+This documentation describes the **v1.0** architecture.
 
 Development has begun on **v2.0 ("The Silicon Revision")**, which will transition this logic from a perfboard prototype to an integrated PCBA with dedicated ADCs and DACs.
 

@@ -50,26 +50,27 @@ The scientific analysis workbench used to characterize the **Red Llama Overdrive
 The System Identification interface. Unlike the organic capture in notebook `01`, this notebook generates deterministic test signals to mathematically characterize the circuit.
 
 1. **Signal Generation:**
-    - Uses `src.audio` to generate precision Logarithmic Sine Sweeps ($20\text{Hz} - 20\text{kHz}$).
+    - Uses `sysaudio.audio` to generate precision Logarithmic Sine Sweeps ($20\text{Hz} - 20\text{kHz}$).
     - Manages audio output via `sounddevice` to drive the pedal input.
 1. **Synchronized Capture:**
     - Triggers the RP2040 DAQ immediately prior to audio playback.
     - Captures the full sweep response of the DUT (Device Under Test).
 1. **Validation:**
     - Verifies that the sweep amplitude remained within the linear headroom of the ADC.
-    - Saves the "Stimulus" (Source) and "Response" (DUT) as paired datasets for deconvolution.
+    - Saves the "Stimulus" (Source) and "Response" (DUT) as paired datasets for analysis.
 
 ### `04_transfer_analysis.ipynb`
 
-**Status:** In Progress 🟡
+**Status:** Complete 🟢
 
-The advanced signal processing workbench implementing the **Angelo Farina (2000)** method for characterizing non-linear audio systems.
+The System Identification workbench: frequency response, distortion vs. frequency, and the large-signal transfer curve.
 
-1. **Deconvolution Engine:**
-    - Generates a "Blue Noise" Inverse Filter to reverse the Log Sine Sweep.
-    - Convolves the recorded sweep to extract the **Linear Impulse Response (IR)** of the pedal.
-    - **Harmonic Separation:** Isolates the linear response from the harmonic distortion products (which appear as "pre-echoes" in negative time).
-1. **Frequency Domain Analysis:**
-    - Applies an asymmetric (causal) window to the IR to discard distortion artifacts.
-    - Performs FFT on the windowed IR to derive the true **Linear Bode Plot** (Magnitude Response).
-    - *Current Work:* Refining the Inverse Filter envelope to correct low-frequency tilt artifacts.
+1. **Chunked Sweep Analysis:**
+    - Stream-mode captures have untimed gaps between 1024-sample blocks, so whole-signal ESS deconvolution (Farina, 2000) is not applicable.
+    - `sysaudio.chunked_sweep` recovers each block's position in the sweep from a constant-period fit, then least-squares fits the exact log-sweep phase model (fundamental + harmonics 2–5) to every block.
+    - The DUT/source ratio of fundamentals gives the **Magnitude Response**; harmonic levels give **Distortion vs. Frequency** against the source's own floor.
+1. **Transfer Curve:**
+    - XY plot of a 100 Hz triangle reveals the asymmetric soft-saturation sigmoid and its capacitive "memory" loop.
+1. **Cross-Validation:**
+    - A gap-free 1 kHz burst capture agrees with the sweep analysis within 0.7 dB.
+    - Exports `fig_transfer_bode`, `fig_transfer_curve` and `fig_thd_fingerprint` to `docs/figures/`.

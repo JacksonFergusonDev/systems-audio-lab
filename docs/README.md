@@ -42,14 +42,14 @@ The final analysis (detailed in **Chapter 6** of the report) successfully valida
 
 ---
 
-## 3. Active Development (Phase II)
+### D. Transfer Function (Phase II)
 
-The project has transitioned from passive capture to **Active Signal Injection**.
+- **Method:** The Red Llama was driven by a 20Hz-20kHz log sine sweep from the host DAC (`scripts/signal/play_sweep.py`). Because stream-mode captures have gaps between 1024-sample blocks, the response was recovered by per-block harmonic fitting (`sysaudio.chunked_sweep`) rather than ESS deconvolution.
+- **Result:** At max gain the response is flat within 0.5dB from 100Hz to 3.4kHz, rolling off to -2.9dB at 19kHz. Distortion is heavy and frequency-independent (H2 ≈ H3 ≈ -13dBc), over 30dB above the measurement chain's floor, and cross-validated against a burst capture within 0.7dB.
 
-- **Signal Generation:** A new Python DDS engine (`scripts/signal/play_sweep.py`) utilizes the host DAC to generate precise frequency sweeps (20Hz-20kHz).
-- **Objective:** Future analysis will utilize this "Laptop-as-Generator" topology to automate Bode plotting and THD profiling.
+![Transfer Function](./figures/fig_transfer_bode.svg)
 
-## 4. Artifacts
+## 3. Artifacts
 
 - **`systems_audio_tech_report.tex`**: The LaTeX source code for the technical report.
 - **`figures/`**: Generated matplotlib exports from the analysis pipeline.

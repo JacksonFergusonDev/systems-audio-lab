@@ -1,6 +1,6 @@
 [project]
 name = "systems-audio-lab"
-version = "0.9.0"
+version = "1.0.0"
 description = "A complete systems engineering project, spanning software-driven logistics, custom power regulation, embedded instrumentation, and empirical analysis of non-linear analog circuits."
 readme = "README.md"
 license = {file = "LICENSE"}
