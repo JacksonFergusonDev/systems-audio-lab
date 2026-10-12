@@ -12,7 +12,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import to_rgba
 from scipy.interpolate import make_interp_spline
 
-from . import config, dsp, metrics
+from . import chunked_sweep, config, dsp, metrics
 
 # --- Style Configuration ---
 COLORS: dict[str, str] = {
@@ -311,6 +311,76 @@ def plot_bode_response(
         save_pdf_svg(fig, savepath)
     if show:
         plt.show()
+
+
+def plot_chunked_bode(
+    sig_src: np.ndarray,
+    sig_dut: np.ndarray,
+    fs: float,
+    savepath: str | None = None,
+    show: bool = True,
+) -> dict[str, np.ndarray]:
+    """
+    Plot frequency response and harmonics vs frequency from stream-mode sweeps.
+
+    Uses per-chunk harmonic fitting (see `chunked_sweep`), which tolerates the
+    dead time between stream-mode chunks that breaks ESS deconvolution.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        The data computed by `chunked_sweep.compute_chunked_bode`.
+    """
+    data = chunked_sweep.compute_chunked_bode(sig_src, sig_dut, fs)
+    freqs = data["freqs"]
+
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(10, 8), sharex=True, gridspec_kw={"height_ratios": [1, 1.4]}
+    )
+
+    # --- Top Panel: Fundamental Magnitude Response ---
+    ax1.semilogx(freqs, data["gain_db"], color=COLORS["dirty"], linewidth=2)
+    ax1.set_title(
+        "Frequency Response (Fundamental, DUT / Source)",
+        fontsize=14,
+        fontweight="bold",
+    )
+    ax1.set_ylabel("Normalized Gain (dB)")
+    ax1.set_ylim(min(-6.0, float(np.nanmin(data["gain_db"])) - 1), 1)
+    ax1.grid(True, which="both", alpha=0.3)
+
+    # --- Bottom Panel: Harmonics Relative to Fundamental ---
+    for i in range(data["dut_harmonics_dbc"].shape[1]):
+        h = i + 2
+        ax2.semilogx(
+            freqs,
+            data["dut_harmonics_dbc"][:, i],
+            color=COLORS["even"] if h % 2 == 0 else COLORS["odd"],
+            linewidth=2 if h <= 3 else 1,
+            alpha=1.0 if h <= 3 else 0.6,
+            label=f"H{h} (DUT)",
+        )
+    ax2.semilogx(
+        freqs,
+        np.nanmax(data["src_harmonics_dbc"], axis=1),
+        color=COLORS["noise"],
+        linestyle="--",
+        label="Source distortion floor",
+    )
+    ax2.set_title("Harmonic Distortion vs. Frequency", fontsize=12, fontweight="bold")
+    ax2.set_ylabel("Level re: Fundamental (dBc)")
+    ax2.set_xlabel("Fundamental Frequency (Hz)")
+    ax2.set_xlim(freqs[0], freqs[-1])
+    ax2.grid(True, which="both", alpha=0.3)
+    ax2.legend(loc="center left", fontsize=9, ncol=2)
+
+    plt.tight_layout()
+    if savepath:
+        save_pdf_svg(fig, savepath)
+    if show:
+        plt.show()
+
+    return data
 
 
 def plot_transfer_curve(
