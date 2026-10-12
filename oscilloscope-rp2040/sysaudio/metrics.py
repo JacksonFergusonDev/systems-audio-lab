@@ -92,11 +92,21 @@ def prepare_transfer_curve(
     Tuple[np.ndarray, np.ndarray]
         (aligned_source, aligned_dut) normalized to 1.0.
     """
-    norm_src = sig_src / np.max(np.abs(sig_src))
-    norm_dut = sig_dut / np.max(np.abs(sig_dut))
-    aligned_src = dsp.smart_align(norm_dut, norm_src)
-    n = min(len(aligned_src), len(norm_dut))
-    return aligned_src[:n], norm_dut[:n]
+    # Remove the ADC bias first; otherwise every point sits near +1.0.
+    src_ac = dsp.remove_dc(sig_src.astype(np.float64))
+    dut_ac = dsp.remove_dc(sig_dut.astype(np.float64))
+    norm_src = src_ac / np.max(np.abs(src_ac))
+    norm_dut = dut_ac / np.max(np.abs(dut_ac))
+
+    # Shift by slicing rather than rolling, so no wrapped samples are plotted.
+    corr = spsig.correlate(norm_src, norm_dut, mode="full")
+    lag = int(spsig.correlation_lags(norm_src.size, norm_dut.size)[np.argmax(corr)])
+    if lag >= 0:
+        src, dut = norm_src[lag:], norm_dut
+    else:
+        src, dut = norm_src, norm_dut[-lag:]
+    n = min(len(src), len(dut))
+    return src[:n], dut[:n]
 
 
 def extract_harmonics_list(
