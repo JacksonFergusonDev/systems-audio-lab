@@ -6,7 +6,7 @@
 **A vertically integrated audio analysis platform.**
 
 ![Analysis Status](https://img.shields.io/badge/analysis-complete-white?style=flat-square&color=white&labelColor=black)
-![Version](https://img.shields.io/badge/version-v1.0-white?style=flat-square&color=white&labelColor=black)
+![Version](https://img.shields.io/badge/version-v1.0__prototype-white?style=flat-square&color=white&labelColor=black)
 ![Python](https://img.shields.io/badge/python-3.13-white?style=flat-square&color=white&labelColor=black)
 [![Ruff](https://img.shields.io/badge/style-ruff-white?style=flat-square&color=white&labelColor=black)](https://github.com/astral-sh/ruff)
 [![Mypy](https://img.shields.io/badge/mypy-checked-white?style=flat-square&color=white&labelColor=black)](https://mypy-lang.org/)
@@ -31,18 +31,6 @@ By owning every stage of the pipeline, this system eliminates the "dependency he
 ### 📄 [Read the Full Engineering Report (PDF)](https://raw.githubusercontent.com/JacksonFergusonDev/systems-audio-lab/main/docs/systems_audio_tech_report.pdf)
 
 *A detailed technical report covering the full systems engineering approach: logistics automation, power supply design, analog circuit fabrication, and custom DAQ instrumentation for spectral validation.*
-
----
-
-## 📈 Transfer Function Analysis
-
-Phase II drove the Red Llama with a 20 Hz – 20 kHz log sine sweep from the laptop's audio output and compared it to a loopback capture of the source (Notebook `04`).
-
-![Transfer Function](docs/figures/fig_transfer_bode.svg)
-
-- **Frequency Response (Top):** Flat within 0.5 dB from 100 Hz to 3.4 kHz, rolling off gently to −2.9 dB at 19 kHz (measured at max gain).
-- **Harmonic Distortion (Bottom):** Heavy and frequency-independent: H2 ≈ H3 ≈ −13 dBc, H4 ≈ −15 dBc, H5 ≈ −24 dBc, more than 30 dB above the measurement chain's own distortion floor (dashed).
-- **Method:** The DAQ's stream mode leaves untimed gaps between 1024-sample blocks, which rules out ESS deconvolution. Instead, `sysaudio.chunked_sweep` recovers each block's position in the sweep and fits the exact sweep phase model (fundamental + harmonics) per block. The result agrees with an independent gap-free 1 kHz burst capture within 0.7 dB.
 
 ---
 
@@ -147,10 +135,10 @@ python oscilloscope-rp2040/scripts/capture/record.py
 ├── oscilloscope-rp2040/       # Firmware (MicroPython) & Analysis Pipeline
 │   ├── firmware/              # RP2040 Sampling Logic
 │   ├── notebooks/             # Jupyter Analysis Notebooks
-│   │   ├── 01_instrument_acquisition.ipynb  # Waveform Capture 🟢
-│   │   ├── 02_instrument_analysis.ipynb     # Harmonic Analysis 🟢
-│   │   ├── 03_transfer_acquisition.ipynb    # Sine Sweep Generation 🟢
-│   │   └── 04_transfer_analysis.ipynb       # Transfer Function Analysis 🟢
+│   │   ├── 01_instrument_acquisition.ipynb  # Waveform Capture
+│   │   ├── 02_instrument_analysis.ipynb     # Harmonic Analysis
+│   │   ├── 03_transfer_acquisition.ipynb    # Sine Sweep Generation
+│   │   └── 04_transfer_analysis.ipynb       # Transfer Function Analysis
 │   ├── sysaudio/              # Analysis Library (FFT, Plotting, Signal Processing)
 │   └── schematics/            # Signal Conditioning Circuit Design
 ├── red-llama-build/           # Guitar Overdrive Test Circuit

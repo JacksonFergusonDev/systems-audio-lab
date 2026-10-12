@@ -6,8 +6,6 @@ This directory contains the Jupyter notebooks used for controlling the RP2040 os
 
 ### `01_instrument_acquisition.ipynb`
 
-**Status:** Active 🟢
-
 The primary interface for capturing organic signal data (Guitar/Synth) from the hardware. It handles the complete acquisition pipeline:
 
 1. **Calibration:**
@@ -26,8 +24,6 @@ The primary interface for capturing organic signal data (Guitar/Synth) from the 
 
 ### `02_instrument_analysis.ipynb`
 
-**Status:** Active 🟢
-
 The scientific analysis workbench used to characterize the **Red Llama Overdrive** using organic signals and validate the "CMOS Tube Sound" hypothesis. It utilizes the custom `src` library to generate publication-ready figures.
 
 1. **Exploratory Analysis:**
@@ -45,8 +41,6 @@ The scientific analysis workbench used to characterize the **Red Llama Overdrive
 
 ### `03_transfer_acquisition.ipynb`
 
-**Status:** Active 🟢
-
 The System Identification interface. Unlike the organic capture in notebook `01`, this notebook generates deterministic test signals to mathematically characterize the circuit.
 
 1. **Signal Generation:**
@@ -60,8 +54,6 @@ The System Identification interface. Unlike the organic capture in notebook `01`
     - Saves the "Stimulus" (Source) and "Response" (DUT) as paired datasets for analysis.
 
 ### `04_transfer_analysis.ipynb`
-
-**Status:** Complete 🟢
 
 The System Identification workbench: frequency response, distortion vs. frequency, and the large-signal transfer curve.
 

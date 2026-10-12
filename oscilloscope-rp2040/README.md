@@ -147,7 +147,7 @@ python oscilloscope-rp2040/scripts/capture/master_transfer.py sweep --duration 5
 
 ## Future Development
 
-This documentation describes the **v1.0** architecture.
+This documentation describes the **v1.0 Prototype** architecture.
 
 Development has begun on **v2.0 ("The Silicon Revision")**, which will transition this logic from a perfboard prototype to an integrated PCBA with dedicated ADCs and DACs.
 
