@@ -328,7 +328,15 @@ def plot_transfer_curve(
 
     # Decimate for scatter performance
     step = max(1, len(x) // 5000)
-    plt.scatter(x[::step], y[::step], c=x[::step], cmap="coolwarm", alpha=0.1, s=2)
+    plt.scatter(
+        x[::step],
+        y[::step],
+        c=x[::step],
+        cmap="coolwarm",
+        alpha=0.1,
+        s=2,
+        rasterized=True,
+    )
     plt.plot(
         [-1, 1], [-1, 1], color="gray", linestyle="--", alpha=0.5, label="Linear Unity"
     )
@@ -349,7 +357,8 @@ def plot_transfer_curve(
     plt.text(0, 0.2, "Linear Region", ha="center", color=COLORS["odd"])
 
     if savepath:
-        save_pdf_svg(fig, savepath)
+        # dpi only affects the rasterized scatter layer; axes stay vector.
+        save_pdf_svg(fig, savepath, dpi=200)
     if show:
         plt.show()
 
