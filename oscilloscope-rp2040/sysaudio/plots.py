@@ -351,10 +351,54 @@ def plot_transfer_curve(
     plt.grid(True, alpha=0.3)
     plt.xlim(-1.1, 1.1)
     plt.ylim(-1.1, 1.1)
-    plt.text(
-        -0.8, 0.9, "Hard Rail (Saturation)", color=COLORS["dirty"], fontweight="bold"
+    plt.legend(loc="upper left", fontsize=9)
+
+    # --- Feature annotations, located from the data ---
+    arrow = {"arrowstyle": "->", "color": "black", "lw": 1}
+    i_max, i_min = int(np.argmax(y)), int(np.argmin(y))
+    plt.annotate(
+        f"Positive saturation\n(soft ceiling, peak {y[i_max]:+.2f})",
+        xy=(x[i_max], y[i_max]),
+        xytext=(-0.15, 0.55),
+        ha="right",
+        color=COLORS["dirty"],
+        fontweight="bold",
+        arrowprops=arrow,
     )
-    plt.text(0, 0.2, "Linear Region", ha="center", color=COLORS["odd"])
+    plt.annotate(
+        f"Negative saturation\n(soft floor, peak {y[i_min]:+.2f})",
+        xy=(x[i_min], y[i_min]),
+        xytext=(0.45, -0.95),
+        color=COLORS["odd"],
+        fontweight="bold",
+        arrowprops=arrow,
+    )
+
+    # Output zero crossings: the two halves of the cycle pass through the
+    # steep centre at different inputs; the gap between them is the hysteresis.
+    cross = np.where(np.diff(np.sign(y)) != 0)[0]
+    rising = cross[np.diff(y)[cross] > 0]
+    falling = cross[np.diff(y)[cross] < 0]
+    if len(rising) and len(falling):
+        x_a, x_b = sorted([float(np.median(x[rising])), float(np.median(x[falling]))])
+        plt.annotate(
+            "High-gain region\n(steep slope near zero)",
+            xy=(x_a, 0),
+            xytext=(-0.95, 0.15),
+            arrowprops=arrow,
+        )
+        plt.annotate(
+            "",
+            xy=(x_a, -0.05),
+            xytext=(x_b, -0.05),
+            arrowprops={"arrowstyle": "<->", "color": "black", "lw": 1},
+        )
+        plt.text(
+            x_b + 0.05,
+            -0.12,
+            "Hysteresis gap\n(rising and falling\nhalves differ)",
+            va="top",
+        )
 
     if savepath:
         # dpi only affects the rasterized scatter layer; axes stay vector.
