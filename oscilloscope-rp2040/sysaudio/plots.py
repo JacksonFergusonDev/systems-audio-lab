@@ -71,6 +71,8 @@ def plot_gain_stage(
     """
     m = metrics.calculate_gain_metrics(sig_clean, sig_dirty, duration_ms=25, fs=fs)
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    # Shared scale, sized to the output, so the input's smallness stays visible
+    y_lim = 1.1 * float(np.max(np.abs(m["dirty_triggered"])))
 
     sns.lineplot(
         x=m["t"], y=m["clean_triggered"], ax=ax1, color=COLORS["clean"], alpha=0.8
@@ -79,13 +81,14 @@ def plot_gain_stage(
         f"Input: Clean DI (Vpp = {m['vpp_in'] * 1000:.1f} mV)", fontweight="bold"
     )
     ax1.set_ylabel("Voltage (V)")
-    ax1.set_ylim(-1.5, 1.5)
+    ax1.set_ylim(-y_lim, y_lim)
     ax1.grid(True, alpha=0.3)
 
     sns.lineplot(x=m["t"], y=m["dirty_triggered"], ax=ax2, color=COLORS["dirty"])
     ax2.set_title(f"Output: Red Llama (Vpp = {m['vpp_out']:.2f} V)", fontweight="bold")
     ax2.set_ylabel("Voltage (V)")
-    ax2.set_ylim(-1.5, 1.5)
+    ax2.set_xlabel("Time (ms)")
+    ax2.set_ylim(-y_lim, y_lim)
     ax2.grid(True, alpha=0.3)
 
     t_peak, y_peak = m["peak_coords"]
