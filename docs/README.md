@@ -28,15 +28,15 @@ The final analysis (detailed in **Chapter 6** of the report) successfully valida
 
 ### B. Signal Gain & Dynamic Range
 
-- **Measurement:** The Red Llama circuit provides approximately **31dB** of gain ($36\times$).
-- **Mechanism:** The circuit amplifies the ~50mV instrument signal until it physically collides with the power supply rails (0V / 3.3V). The density of the waveform below visualizes this massive amplification factor.
+- **Measurement:** The Red Llama circuit provides approximately **37dB** of gain ($72\times$, peak-to-peak), with the Red Llama capture corrected for the DAQ's 0.5× input divider.
+- **Mechanism:** The circuit amplifies the 49mVpp instrument signal to 3.54Vpp, deep into the saturation of its CMOS inverters. The density of the waveform below visualizes this massive amplification factor.
 
 ![Gain Stage](./figures/fig_llama_gain.svg)
 
 ### C. System Sensitivity (Noise Floor)
 
-- **Validation:** The custom Linear Power Regulator successfully eliminated 60Hz mains hum.
-- **Metric:** The DAQ achieved a read noise RMS of **~1.3mV**, yielding a calculated Signal-to-Noise Ratio (SNR) of **42dB** relative to the saturated signal.
+- **Validation:** With the input open, mains pickup is negligible (a 60Hz line of ~0.05mV against 1.3mV of broadband noise).
+- **Metric:** The DAQ achieved a read noise of **1.29mV RMS** (confirmed within 1% by an independent hum-residual measurement), giving a full-scale dynamic range of **59.1dB** (9.5 effective bits).
 
 ![Noise Floor](./figures/fig_validation_noise.svg)
 
@@ -45,7 +45,7 @@ The final analysis (detailed in **Chapter 6** of the report) successfully valida
 ### D. Transfer Function (Phase II)
 
 - **Method:** The Red Llama was driven by a 20Hz-20kHz log sine sweep from the host DAC (`scripts/signal/play_sweep.py`). Because stream-mode captures have gaps between 1024-sample blocks, the response was recovered by per-block harmonic fitting (`sysaudio.chunked_sweep`) rather than ESS deconvolution.
-- **Result:** At max gain the response is flat within 0.5dB from 97Hz to 3.4kHz, rolling off to -2.8dB at 19.2kHz. Distortion is heavy and frequency-independent (H2 ≈ H3 ≈ -13dBc), over 30dB above the measurement chain's floor, and cross-validated against a burst capture within 0.2dB. Across H2-H8 the even harmonics carry 1.34× the energy of the odd ones for a pure 1kHz tone, confirming asymmetric clipping.
+- **Result:** At max gain the response is flat within 0.5dB from 97Hz to 3.4kHz, rolling off to -2.8dB at 19.1kHz. Distortion is heavy and frequency-independent (H2 ≈ H3 ≈ -13dBc), over 30dB above the measurement chain's floor, and cross-validated against a burst capture within 0.2dB. Across H2-H8 the even harmonics carry 1.34× the energy of the odd ones for a pure 1kHz tone, confirming asymmetric clipping.
 
 ![Transfer Function](./figures/fig_transfer_bode.svg)
 

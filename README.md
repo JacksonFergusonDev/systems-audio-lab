@@ -77,7 +77,7 @@ This project consists of four interconnected subsystems, each enabling the next.
 - **The Problem:** Needed to measure the harmonic content of the overdrive circuit but didn't have an oscilloscope.
 - **The Solution:** Built a USB oscilloscope around the RP2040 microcontroller with custom analog signal conditioning.
 - **Architecture:** Store-and-forward firmware separates high-speed sampling from USB transmission to avoid data loss.
-- **Performance:** 97.8 kSps (calibrated against 60 Hz mains), 12-bit resolution, 1.3 mV noise floor.
+- **Performance:** 97.69 kSps (verified against crystal-referenced test tones), 12-bit ADC with 59 dB full-scale dynamic range (9.5 effective bits), 1.3 mV RMS noise floor.
 
 <img src="oscilloscope-rp2040/assets/oscilloscope_1.0_gain.jpg" width="45%" alt="Oscilloscope Build"> <img src="oscilloscope-rp2040/assets/oscilloscope_screen.png" width="54%" alt="Oscilloscope Screen">
 
@@ -172,7 +172,7 @@ With the measurement chain validated, the next iteration focuses on **Determinis
 
 #### 3. Signal Chain Upgrade
 
-- **External ADC:** Replace the RP2040's internal 12-bit ADC with a **24-bit Audio Codec** (I2S). This increases dynamic range for measuring low-level harmonics (-90dB noise floor).
+- **External ADC:** Replace the RP2040's internal 12-bit ADC with a **24-bit Audio Codec** (I2S). This increases dynamic range for measuring low-level harmonics (target noise floor: -90dB).
 - **On-board DAC:** Integrate a DAC (PCM5102) to generate test signals directly from hardware, enabling self-contained frequency sweeps.
 
 #### 4. Programmable Input Stage

@@ -9,7 +9,7 @@ This directory contains the Jupyter notebooks used for controlling the RP2040 os
 The primary interface for capturing organic signal data (Guitar/Synth) from the hardware. It handles the complete acquisition pipeline:
 
 1. **Calibration:**
-    - Measures the *True Sampling Rate (FS)* by analyzing the 60Hz mains hum.
+    - Measures the *True Sampling Rate (FS)* by analyzing the 60Hz mains hum (a first-pass estimate; notebook `02` verifies it against crystal-referenced tones).
     - Caches the calibration result to `data/calibration.json` so you don't need to recalibrate on every kernel restart.
 1. **Data Capture:**
     - Triggers the RP2040 to capture a burst of samples.
@@ -27,7 +27,7 @@ The primary interface for capturing organic signal data (Guitar/Synth) from the 
 The scientific analysis workbench used to characterize the **Red Llama Overdrive** using organic signals and validate the "CMOS Tube Sound" hypothesis. It utilizes the custom `src` library to generate publication-ready figures.
 
 1. **Exploratory Analysis:**
-    - **Gain Staging:** Visualizes the massive signal amplification ($36\times$ / $31\text{dB}$) between the instrument input and the pedal output.
+    - **Gain Staging:** Visualizes the massive signal amplification ($72\times$ / $37\text{dB}$, after correcting for the DAQ's 0.5× divider) between the instrument input and the pedal output.
     - **Noise Floor:** Quantifies the detector's dynamic range and bias stability.
 1. **Topology Verification:**
     - **Phase Locking:** Uses cross-correlation `smart_align()` to overlay input vs. output waveforms, revealing the "Soft Knee" saturation curve in the time domain.

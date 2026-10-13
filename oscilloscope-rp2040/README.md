@@ -15,9 +15,10 @@ In **Phase 2**, the system was expanded to include a host-side **Function Genera
 | Parameter | Performance |
 | :--- | :--- |
 | **ADC Depth** | 12-bit (Hardware) $\to$ 16-bit (Scaled) |
-| **Sample Rate ($F_s$)** | **97.8 kHz** (Calibrated via 60Hz Mains Reference) |
-| **Bandwidth** | DC -- 48.9 kHz (Nyquist) |
-| **Buffer** | 16,384 Samples ($\approx 167$ms burst) |
+| **Sample Rate ($F_s$)** | **97.69 kHz** ±0.01% (verified against crystal-referenced test tones) |
+| **Bandwidth** | DC -- 48.8 kHz (Nyquist) |
+| **Buffer** | 16,384 Samples ($\approx 168$ms burst) |
+| **Noise Floor** | 1.29 mV RMS; 59.1 dB full-scale dynamic range (9.5 effective bits) |
 | **Input Range** | 0--3.3V (Unipolar) / $\pm 3.3V$ (AC Coupled) |
 
 ## 📂 Repository Architecture

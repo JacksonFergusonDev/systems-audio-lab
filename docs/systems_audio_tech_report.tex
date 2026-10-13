@@ -685,7 +685,7 @@ The guitar captures above characterize the DUT at a single, uncontrolled operati
 \end{table}
 
 \subsection{The Stream-Mode Discontinuity Problem}
-A 5\,s sweep does not fit in the 16,384-sample ($\approx 167$\,ms) burst buffer, so the sweeps were captured in the firmware's stream mode. Stream mode is request--response: the host requests a 1,024-sample block, the RP2040 samples it ($10.5$\,ms), transmits it over USB, and waits for the next request. Analysis of the captures shows a block period of $\approx 13.9$\,ms, so roughly 25\% of wall-clock time falls into untimed gaps between blocks. Concatenated, the blocks form a signal with a phase discontinuity at every block boundary (sample-to-sample jumps $100$--$166\times$ larger than elsewhere).
+A 5\,s sweep does not fit in the 16,384-sample ($\approx 168$\,ms) burst buffer, so the sweeps were captured in the firmware's stream mode. Stream mode is request--response: the host requests a 1,024-sample block, the RP2040 samples it ($10.5$\,ms), transmits it over USB, and waits for the next request. Analysis of the captures shows a block period of $\approx 13.9$\,ms, so roughly 25\% of wall-clock time falls into untimed gaps between blocks. Concatenated, the blocks form a signal with a phase discontinuity at every block boundary (sample-to-sample jumps $100$--$166\times$ larger than elsewhere).
 
 The standard technique for swept-sine measurement, Exponential Sine Sweep (ESS) deconvolution,\cite{farina2000_swept_sine} convolves the whole response with an inverse sweep and therefore requires a phase-continuous recording. With 357 untimed gaps it is not applicable to these captures.
 
