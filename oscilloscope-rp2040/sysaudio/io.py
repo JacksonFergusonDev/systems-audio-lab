@@ -8,6 +8,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from . import config
+
 
 def ensure_dir(directory: str) -> None:
     """Ensure that the specified directory exists, creating it if necessary."""
@@ -64,7 +66,9 @@ def save_signal(
     return path
 
 
-def load_signal(filepath: str | Path) -> tuple[np.ndarray, float]:
+def load_signal(
+    filepath: str | Path, fs_override: float | None = None
+) -> tuple[np.ndarray, float]:
     """
     Load data and sampling rate from an .npz file.
 
@@ -72,6 +76,10 @@ def load_signal(filepath: str | Path) -> tuple[np.ndarray, float]:
     ----------
     filepath : str
         Path to the .npz file.
+    fs_override : float, optional
+        Sampling rate to return instead of the one stored in the file. The
+        stored value records what was assumed at capture time; pass
+        `config.FS_DEFAULT` to analyse with the measured rate.
 
     Returns
     -------
@@ -99,7 +107,12 @@ def load_signal(filepath: str | Path) -> tuple[np.ndarray, float]:
                 raise KeyError("No 'signal' or 'data' key found in archive.")
 
             # Load FS or default
-            fs = float(archive["fs"]) if "fs" in archive else 97812.0
+            if fs_override is not None:
+                fs = float(fs_override)
+            elif "fs" in archive:
+                fs = float(archive["fs"])
+            else:
+                fs = float(config.FS_DEFAULT)
 
             return sig, fs
     except FileNotFoundError:

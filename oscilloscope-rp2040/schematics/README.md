@@ -125,4 +125,4 @@ The RP2040 internal clock is stable, but MicroPython overhead introduces determi
 1. Measure the offset of the peak from 60.0Hz.
 1. Apply the scalar correction factor $\alpha = \frac{60.0}{f_{meas}}$.
 
-*For this specific build, the calibrated $F_s \approx 97.8 kHz$.*
+*For this specific build, the mains method gave $F_s = 97.86 kHz$, $0.18\%$ high. Mains hum is a weak reference for one short burst; verifying against crystal-referenced sound-card tones (`calibration.calibrate_fs_with_tone`) gives $F_s = 97.69 kHz \pm 0.01\%$. See Notebook `02`, Section 5b.*

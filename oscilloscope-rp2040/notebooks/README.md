@@ -6,12 +6,10 @@ This directory contains the Jupyter notebooks used for controlling the RP2040 os
 
 ### `01_instrument_acquisition.ipynb`
 
-**Status:** Active 🟢
-
 The primary interface for capturing organic signal data (Guitar/Synth) from the hardware. It handles the complete acquisition pipeline:
 
 1. **Calibration:**
-    - Measures the *True Sampling Rate (FS)* by analyzing the 60Hz mains hum.
+    - Measures the *True Sampling Rate (FS)* by analyzing the 60Hz mains hum (a first-pass estimate; notebook `02` verifies it against crystal-referenced tones).
     - Caches the calibration result to `data/calibration.json` so you don't need to recalibrate on every kernel restart.
 1. **Data Capture:**
     - Triggers the RP2040 to capture a burst of samples.
@@ -26,12 +24,10 @@ The primary interface for capturing organic signal data (Guitar/Synth) from the 
 
 ### `02_instrument_analysis.ipynb`
 
-**Status:** Active 🟢
-
 The scientific analysis workbench used to characterize the **Red Llama Overdrive** using organic signals and validate the "CMOS Tube Sound" hypothesis. It utilizes the custom `src` library to generate publication-ready figures.
 
 1. **Exploratory Analysis:**
-    - **Gain Staging:** Visualizes the massive signal amplification ($36\times$ / $31\text{dB}$) between the instrument input and the pedal output.
+    - **Gain Staging:** Visualizes the massive signal amplification ($72\times$ / $37\text{dB}$, after correcting for the DAQ's 0.5× divider) between the instrument input and the pedal output.
     - **Noise Floor:** Quantifies the detector's dynamic range and bias stability.
 1. **Topology Verification:**
     - **Phase Locking:** Uses cross-correlation `smart_align()` to overlay input vs. output waveforms, revealing the "Soft Knee" saturation curve in the time domain.
@@ -45,31 +41,29 @@ The scientific analysis workbench used to characterize the **Red Llama Overdrive
 
 ### `03_transfer_acquisition.ipynb`
 
-**Status:** Active 🟢
-
 The System Identification interface. Unlike the organic capture in notebook `01`, this notebook generates deterministic test signals to mathematically characterize the circuit.
 
 1. **Signal Generation:**
-    - Uses `src.audio` to generate precision Logarithmic Sine Sweeps ($20\text{Hz} - 20\text{kHz}$).
+    - Uses `sysaudio.audio` to generate precision Logarithmic Sine Sweeps ($20\text{Hz} - 20\text{kHz}$).
     - Manages audio output via `sounddevice` to drive the pedal input.
 1. **Synchronized Capture:**
     - Triggers the RP2040 DAQ immediately prior to audio playback.
     - Captures the full sweep response of the DUT (Device Under Test).
 1. **Validation:**
     - Verifies that the sweep amplitude remained within the linear headroom of the ADC.
-    - Saves the "Stimulus" (Source) and "Response" (DUT) as paired datasets for deconvolution.
+    - Saves the "Stimulus" (Source) and "Response" (DUT) as paired datasets for analysis.
 
 ### `04_transfer_analysis.ipynb`
 
-**Status:** In Progress 🟡
+The System Identification workbench: frequency response, distortion vs. frequency, and the large-signal transfer curve.
 
-The advanced signal processing workbench implementing the **Angelo Farina (2000)** method for characterizing non-linear audio systems.
-
-1. **Deconvolution Engine:**
-    - Generates a "Blue Noise" Inverse Filter to reverse the Log Sine Sweep.
-    - Convolves the recorded sweep to extract the **Linear Impulse Response (IR)** of the pedal.
-    - **Harmonic Separation:** Isolates the linear response from the harmonic distortion products (which appear as "pre-echoes" in negative time).
-1. **Frequency Domain Analysis:**
-    - Applies an asymmetric (causal) window to the IR to discard distortion artifacts.
-    - Performs FFT on the windowed IR to derive the true **Linear Bode Plot** (Magnitude Response).
-    - *Current Work:* Refining the Inverse Filter envelope to correct low-frequency tilt artifacts.
+1. **Chunked Sweep Analysis:**
+    - Stream-mode captures have untimed gaps between 1024-sample blocks, so whole-signal ESS deconvolution (Farina, 2000) is not applicable.
+    - `sysaudio.chunked_sweep` recovers each block's position in the sweep from a constant-period fit, then least-squares fits the exact log-sweep phase model (fundamental + harmonics 2–5) to every block.
+    - The DUT/source ratio of fundamentals gives the **Magnitude Response**; harmonic levels give **Distortion vs. Frequency** against the source's own floor.
+1. **Transfer Curve:**
+    - XY plot of a 100 Hz triangle reveals the asymmetric soft-saturation sigmoid and its capacitive "memory" loop.
+1. **Cross-Validation:**
+    - A gap-free 1 kHz burst capture agrees with the sweep analysis within 0.2 dB.
+    - Quantifies even vs. odd harmonic energy (H2–H8) for the 1 kHz tone, complementing the guitar comparison in notebook `02`.
+    - Exports `fig_transfer_bode`, `fig_transfer_curve` and `fig_thd_fingerprint` to `docs/figures/`.

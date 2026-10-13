@@ -36,6 +36,7 @@
 
 % --- HYPERLINKS STYLING ---
 \usepackage[pdfusetitle]{hyperref}
+\usepackage{xurl} % allow long URLs to break across lines
 \hypersetup{
   colorlinks=false,
   linkcolor=blue,
@@ -81,6 +82,9 @@
   language=Python
 }
 \lstset{style=pythonstyle}
+% Ignore emoji variation selectors (U+FE0F) in listed source; the harf emoji
+% fallback crashes on them.
+\catcode"FE0F=9
 
 % --- HEADER/FOOTER ---
 \pagestyle{fancy}
@@ -131,7 +135,7 @@
 \begin{abstract}
   \noindent This document records a recursive engineering journey: the design and fabrication of the tools required to build a specific device. Identifying a gap between software architecture proficiency and physical implementation, I undertook a project to build an analog guitar pedal (The Red Llama). However, the standard hobbyist workflow proved insufficient for rigorous engineering.
 
-  This technical report details the development of four interdependent systems: (1) \href{https://github.com/JacksonFergusonDev/star-ground}{\textbf{Star Ground}}, a deterministic Python logistics engine for BOM management; (2) A thermal-managed \textbf{Linear Power Supply}; (3) The \textbf{Red Llama} analog overdrive circuit; and (4) A custom \textbf{RP2040 Data Acquisition System} (DAQ) used to spectrally validate the final build.
+  This technical report details the development of four interdependent systems: (1) \href{https://github.com/JacksonFergusonDev/star-ground}{\textbf{Star Ground}}, a deterministic Python logistics engine for BOM management; (2) A thermal-managed \textbf{Linear Power Supply}; (3) The \textbf{Red Llama} analog overdrive circuit; and (4) A custom \textbf{RP2040 Data Acquisition System} (DAQ) used to spectrally validate the final build and to measure its swept frequency response and harmonic distortion.
 \end{abstract}
 
 \tableofcontents
@@ -188,6 +192,8 @@ The remainder of this document is organized logically following the signal path 
   \item \textbf{Chapter 5} explains the design of the digital instrumentation used for analysis.
   \item \textbf{Chapter 6} presents the empirical data, synthesizing the four systems to validate the initial engineering hypotheses.
 \end{itemize}
+
+Every measured value in Chapters 5 and 6 is computed in the Jupyter notebooks in \texttt{oscilloscope-rp2040/notebooks/} of the accompanying repository (\url{https://github.com/JacksonFergusonDev/systems-audio-lab}). Citations of the form ``Notebook~\texttt{02}, \S5'' refer to a numbered section of those notebooks: Notebook~\texttt{01} performs acquisition and calibration, Notebook~\texttt{02} analyses the guitar captures and validates the instrument, Notebook~\texttt{03} acquires the test-signal captures, and Notebook~\texttt{04} analyses them.
 
 % =============================================================================
 % CHAPTER 2: STAR GROUND
@@ -251,7 +257,7 @@ Beyond simple counting, the engine acts as a domain expert system. It utilizes a
 The final output of the pipeline is not just a shopping list, but a structured build guide. The engine generates ``Field Manuals''---PDFs that reorganize the assembly order by component Z-height (Resistors $\to$ Sockets $\to$ Capacitors). This enforces mechanical stability during soldering, ensuring that low-profile components are not obstructed by taller ones.
 
 \section{Validation}
-This software was successfully used to procure and manage the inventory for the Red Llama build (Chapter 4) and the Power Regulator (Chapter 3), resulting in zero missing parts and zero excess waste of high-value components.
+This software was used to procure and manage the inventory for the Red Llama build (Chapter 4) and the Power Regulator (Chapter 3). In practice, both builds were completed without a missing-part delay or a surplus of high-value components.
 
 % =============================================================================
 % CHAPTER 3: POWER REGULATOR
@@ -282,8 +288,8 @@ The primary engineering constraint in linear regulation is heat dissipation. The
 
 Given an input of $12\text{V}$ and a target output of $9\text{V}$, the regulator drops $3\text{V}$ across the junction.
 \begin{itemize}
-  \item \textbf{Scenario A (Red Llama):} The analog DUT draws negligible current ($<10\text{mA}$), resulting in $P_d \approx 0.03\text{W}$.
-  \item \textbf{Scenario B (Future Proofing):} Digital pedals (reverbs/delays) can draw upwards of $400\text{mA}$.
+  \item \textbf{Scenario A (Red Llama):} The analog DUT's current draw was not measured; CMOS pedals of this kind typically draw well under $10\text{mA}$, which would give $P_d < 0.03\text{W}$.
+  \item \textbf{Scenario B (Future Proofing):} Digital pedals (reverbs/delays) draw far more; a $400\text{mA}$ load is taken as the design case.
 \end{itemize}
 
 For Scenario B, the dissipation becomes significant:
@@ -309,7 +315,7 @@ The Bill of Materials, generated via Star Ground, included specific selections f
 
 \begin{itemize}
   \item \textbf{Input Filtering:} A $100\mu\text{F}$ electrolytic capacitor handles bulk low-frequency ripple from the 12V source, while a parallel $100\text{nF}$ polyester capacitor filters high-frequency transients.\cite{st_l7809cv_datasheet}
-  \item \textbf{Reverse Polarity Protection:} A \textbf{1N5817 Schottky Diode} was selected over a standard 1N4001 silicon diode.\cite{diode_1n5817_datasheet,diode_1n4001_datasheet} The Schottky's lower forward voltage drop ($V_f \approx 0.45\text{V}$) preserves more of the input voltage headroom compared to silicon ($V_f \approx 0.7\text{V}$).\cite{diode_1n5817_datasheet,diode_1n4001_datasheet}
+  \item \textbf{Reverse Polarity Protection:} A \textbf{1N5817 Schottky Diode} was selected over a standard 1N4001 silicon diode.\cite{diode_1n5817_datasheet,diode_1n4001_datasheet} The Schottky's lower forward voltage drop ($V_f \approx 0.45\text{V}$ at its rated $1\text{A}$, and $\approx 0.3\text{V}$ at the few milliamps a pedal draws) preserves more of the input voltage headroom compared to silicon ($V_f \approx 0.7\text{V}$).\cite{diode_1n5817_datasheet,diode_1n4001_datasheet}
 \end{itemize}
 
 \begin{table}[htbp]
@@ -379,7 +385,7 @@ The reference design calls for a \textbf{1N4001} silicon diode at position D2 fo
   V_{rail} = V_{source} - V_{diode} = 9.0\text{V} - 0.7\text{V} = 8.3\text{V}
 \end{equation}
 
-The CD4049's headroom is strictly limited by the supply rails. Losing 0.7V reduces the clean headroom before clipping occurs. To recover this, I substituted the 1N4001 with a \textbf{1N5817 Schottky Diode}.\cite{diode_1n5817_datasheet}
+The CD4049's headroom is strictly limited by the supply rails. Losing 0.7V reduces the clean headroom before clipping occurs. To recover this, I substituted the 1N4001 with a \textbf{1N5817 Schottky Diode}, whose forward drop is $\approx 0.3\text{V}$ at the few milliamps the pedal draws.\cite{diode_1n5817_datasheet}
 
 \begin{equation}
   V_{rail(mod)} = 9.0\text{V} - 0.3\text{V} = 8.7\text{V}
@@ -494,7 +500,8 @@ def capture_burst(adc_obj, buf, size: int):
 
 This instructs the compiler to emit ARM Thumb machine code directly.\cite{micropython_speed_python} While the method lookup still incurs overhead, the loop mechanics (increment, compare, jump) become native CPU instructions. This optimization allowed the system to achieve a stable sample rate of $\approx 100\,\text{kSps}$, far exceeding the initial 40\,kSps target.
 
-\section{Calibration: The "Mains Hum" Reference}
+\section{Calibration: Mains Hum and Reference Tones}
+\label{sec:calibration}
 Accurate frequency domain analysis requires a precise knowledge of the sampling rate ($F_s$). While the RP2040 hardware clock is stable, the firmware architecture relies on a MicroPython polling loop running on the CPU rather than a DMA-driven hardware timer. Consequently, the effective sample rate is determined by the interpreter's execution overhead, which creates a deterministic but unknown latency.
 
 To resolve this without external signal generators, the system was calibrated using a ubiquitous, high-stability reference standard: the North American Power Grid ($60.00\,\text{Hz}$).
@@ -510,25 +517,40 @@ The calibration signal was acquired by the user touching the input probe tip. Th
 The voltage appearing at the ADC ($V_{adc}$) is determined by the ratio of the input impedance to the total path impedance. Given that the reactance of a 50\,pF gap at 60\,Hz is extremely high ($\approx 53\,\text{M}\Omega$), the circuit forms a high-impedance attenuator. However, because the source potential is high ($\approx 170\,\text{V}_{pk}$), even this tiny coupling ratio yields a measurable signal in the millivolt range.
 
 \subsection{Derivation of the Correction Factor}
-With the 60\,Hz signal captured, an FFT was performed using the theoretical sample rate ($F_{assumed}$) derived from the loop delay code. The peak analysis revealed a significant discrepancy:
-\begin{itemize}
-  \item \textbf{Theoretical Peak:} 60.0\,Hz
-  \item \textbf{Observed Peak:} 49.9\,Hz
-\end{itemize}
-
-This shift indicates that the real-world time steps ($\Delta t$) were larger than calculated (the loop ran slower). Since the frequency axis of an FFT is linear with respect to $F_s$, we can derive a dimensionless scalar correction factor ($\alpha$):
+Because the frequency axis of an FFT scales linearly with $F_s$, a reference of known frequency $f_{ref}$ that measures $f_{meas}$ under an assumed rate $F_{assumed}$ gives the true rate directly:
 
 \begin{equation}
-  \alpha = \frac{f_{ref}}{f_{meas}} = \frac{60.0}{49.9} \approx 1.2024
+  F_{real} = F_{assumed} \cdot \frac{f_{ref}}{f_{meas}}
 \end{equation}
 
-Applying this scalar to the assumed sample rate yields the empirically calibrated rate:
+The first-pass calibration applied this to the mains hum, locating the 60\,Hz peak with a weighted average of the FFT bins around it, and gave $F_s = 97{,}859.6$\,Hz (Notebook~\texttt{01}, first cell).
 
-\begin{equation}
-  F_{real} = F_{assumed} \times \alpha \approx 97,812\,\text{Hz}
-\end{equation}
+\subsection{Verification Against Crystal-Referenced Tones}
+Mains hum is a weak reference for a single burst. The grid wanders by a few hundredths of a hertz, a 16,384-sample burst holds only $\approx 10$ cycles, and the coupled hum is just $2.4$\,mV peak, $2.3$\,dB above the noise floor. The Phase II test tones (Section \ref{sec:transfer}) are a far better reference: a sound card derives them from a crystal clock, typically accurate to $\pm 50$\,ppm. Each was fitted by least squares, which for a steady tone resolves frequency far below the $\approx 6$\,Hz FFT bin (Notebook~\texttt{02}, \S5b):
 
-This ``Golden Constant'' ($F_s \approx 97.8$\,kSps) was hardcoded into the analysis pipeline. Subsequent verification against known audio sources confirmed that this single-point calibration effectively linearized the frequency domain mapping across the full bandwidth.
+\begin{table}[htbp]
+  \centering
+  \small\sffamily
+  \renewcommand{\arraystretch}{1.3}
+  \rowcolors{2}{TableRow}{white}
+  \begin{tabular}{@{} l r r @{}}
+    \toprule
+    \rowcolor{TableHeader}
+    \textbf{\textcolor{white}{Reference}} &
+    \textbf{\textcolor{white}{Assumed $F_s$ (Hz)}} &
+    \textbf{\textcolor{white}{Implied $F_s$ (Hz)}} \\
+    \midrule
+    1\,kHz sine, laptop direct      & 97,793.1 & $97{,}683.3 \pm 0.0$ \\
+    1\,kHz sine, via Red Llama      & 97,793.1 & $97{,}683.2 \pm 0.3$ \\
+    100\,Hz triangle, laptop direct & 97,793.1 & $97{,}688.9 \pm 0.6$ \\
+    60\,Hz mains hum                & 97,859.6 & $97{,}570.3 \pm 45.6$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Sample rate implied by each reference signal. Source: Notebook~\texttt{02}, \S5b.}
+  \label{tab:fs}
+\end{table}
+
+The three crystal-referenced tones agree within $58$\,ppm, giving $F_s = 97.69\,\text{kHz} \pm 0.01\%$. The mains calibration was $0.18\%$ high, and the hardware default used during the Phase II captures ($97{,}793.1$\,Hz) $0.11\%$ high; the mains capture is consistent with the tones within its large uncertainty. All analysis in Chapter 6 uses the measured rate. A rate error scales every frequency axis by the same factor, so harmonic ratios, THD and decibel levels are unaffected by it.
 
 \section{Final Technical Specifications}
 The following specifications reflect the measured performance of the commissioned device.
@@ -547,16 +569,18 @@ The following specifications reflect the measured performance of the commissione
     \midrule
 
     \textbf{ADC Resolution}       & 12-bit (Scaled to 16-bit integer) \\
-    \textbf{Sample Rate ($F_s$)} & $97.8\,\text{kHz} \pm 0.5\%$ (Calibrated) \\
-    \textbf{Bandwidth}           & DC -- 48.9\,kHz (Nyquist Limit) \\
-    \textbf{Buffer Depth}        & 16,384 Samples ($\approx 167$\,ms duration) \\
-    \textbf{Spectral Resolution} & $\approx 5.9\,\text{Hz}$ per FFT bin \\
+    \textbf{Sample Rate ($F_s$)} & $97.69\,\text{kHz} \pm 0.01\%$ (Crystal-referenced) \\
+    \textbf{Bandwidth}           & DC -- 48.8\,kHz (Nyquist Limit) \\
+    \textbf{Buffer Depth}        & 16,384 Samples ($\approx 168$\,ms duration) \\
+    \textbf{Stream Mode}         & 1,024-sample blocks; $\approx 75\%$ duty cycle (untimed gaps) \\
+    \textbf{Spectral Resolution} & $5.96\,\text{Hz}$ per FFT bin \\
     \textbf{Input Range}         & 0--3.3\,V (Unipolar) / $\pm 3.3$\,V (AC Coupled) \\
-    \textbf{Noise Floor}         & $<50\,\text{mV}$ (RMS System); $353\,\text{mV}$ (Env. Hum) \\
+    \textbf{Noise Floor}         & $1.29\,\text{mV}$ RMS (input open) \\
+    \textbf{Dynamic Range}       & $59.1\,\text{dB}$ full-scale sine to noise ($9.5$ effective bits) \\
     \bottomrule
   \end{tabular}
 
-  \caption{Measured System Performance}
+  \caption{Measured System Performance. Source: Notebook~\texttt{02}, \S5b (sample rate), Notebook~\texttt{02}, \S5 (noise floor, dynamic range), Notebook~\texttt{04}, \S3 (stream-mode duty cycle); bandwidth, buffer duration and bin width follow from $F_s$ and $N$.}
   \label{tab:specs}
 \end{table}
 
@@ -566,38 +590,43 @@ The following specifications reflect the measured performance of the commissione
 \chapter{Analysis \& Validation}
 
 \section{Experimental Methodology}
-To characterize the Red Llama Overdrive, the device was inserted into the signal chain between a reference source (Electric Guitar, Neck Pickup) and the RP2040 DAQ. The data acquisition pipeline utilized the system's ``Science Mode,'' executing a burst capture of $N=16,384$ samples at a calibrated rate of $F_s \approx 97.8\,\text{kSps}$.
+To characterize the Red Llama Overdrive, the device was inserted into the signal chain between a reference source (Electric Guitar, Neck Pickup) and the RP2040 DAQ. The data acquisition pipeline utilized the system's ``Science Mode,'' executing a burst capture of $N=16,384$ samples at a calibrated rate of $F_s \approx 97.7\,\text{kSps}$ (Section \ref{sec:calibration}).
 
 The analysis pipeline was implemented in Python using \texttt{numpy} and \texttt{scipy.signal}.\cite{scipy_signal_tutorial,numpy_fft_fft} Crucially, to mitigate spectral leakage caused by the finite sampling interval, a \textbf{Hann Window} function ($w(n) = 0.5 - 0.5\cos(\frac{2\pi n}{N-1})$) was applied to the raw time-domain buffer prior to the Fast Fourier Transform (FFT).\cite{scipy_fft_tutorial, scipy_hann_window} This preprocessing step ensures that the side-lobes of high-amplitude fundamental frequencies do not obscure the lower-amplitude harmonic distortion products.\cite{harris1978_windows_dft}
+
+The swept measurements of Section \ref{sec:transfer} additionally use the firmware's stream mode, which requires a different analysis method described there.
 
 \section{DAQ Sensitivity \& Noise Floor}
 Before characterizing the Device Under Test (DUT), the instrumentation itself was validated to quantify the available dynamic range. Figure \ref{fig:noise} illustrates the spectral density of the system with the input grounded.
 
-The system exhibits a read noise RMS of $\approx 1.3\text{mV}$. By comparing this noise floor against the saturation limit of the signal chain ($\approx 170\text{mV}_{rms}$ before clipping), we can calculate the effective Signal-to-Noise Ratio (SNR):
+With the input open, the system exhibits a read noise of $1.293$\,mV RMS, about $1.6$ ADC steps. An independent estimate comes from the mains-hum calibration capture: after fitting and removing the hum, the residual ``thickness'' of the waveform is $1.306$\,mV RMS, agreeing within $1\%$.
+
+The usable range of the instrument is its \textbf{dynamic range}: the largest clean signal over the noise floor. The ADC window ($0$--$3.3$\,V) admits a full-scale sine of $1.65$\,V peak, i.e. $1.167\,\text{V}_{rms}$:
 
 \begin{equation}
-  \text{SNR}_{dB} = 20 \cdot \log_{10}\left(\frac{V_{signal}}{V_{noise}}\right) = 20 \cdot \log_{10}(129.6) \approx 42.25\,\text{dB}
+  \text{DR}_{dB} = 20 \cdot \log_{10}\left(\frac{V_{FS,rms}}{V_{noise,rms}}\right) = 20 \cdot \log_{10}\left(\frac{1.167}{1.293\times10^{-3}}\right) \approx 59.1\,\text{dB}
 \end{equation}
 
-This confirms a dynamic range of $>42\,\text{dB}$. Furthermore, the spectrum is remarkably free of the 60Hz mains hum spikes that typically dominate amateur builds, validating the thermal and electrical isolation provided by the \textbf{Linear Power Regulator}.
+This corresponds to $9.5$ effective bits of the ADC's 12 (an ideal 12-bit converter reaches $74.0$\,dB). Mains pickup is negligible: the open-input spectrum contains a 60\,Hz line of only $\approx 0.05$\,mV amplitude. All values are computed in Notebook~\texttt{02}, \S5.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/fig_validation_noise.pdf}
-  \caption{\textbf{DAQ Sensitivity Analysis.} The system exhibits a read noise RMS of $\approx 1.3\text{mV}$. Note the clean separation between the signal (green) and the noise floor (gray) below $1\text{kHz}$, yielding an effective SNR of $\approx 42\text{dB}$.}
+  \caption{\textbf{DAQ Sensitivity Analysis.} The system exhibits a read noise of $1.29\text{mV}$ RMS. Note the clean separation between the signal (green) and the noise floor (gray) below $1\text{kHz}$. Full-scale dynamic range is $59.1\text{dB}$. Source: Notebook~\texttt{02}, \S5.}
   \label{fig:noise}
 \end{figure}
 
 \section{Gain Structure \& Transfer Characteristic}
-The Red Llama operates as a high-gain pre-amplifier. To visualize the amplification factor, the input signal ($\approx 50\text{mV}$) was plotted against the output on a unified voltage scale (Figure \ref{fig:gain}).
+\label{sec:gain}
+The Red Llama operates as a high-gain pre-amplifier. To visualize the amplification factor, the input signal ($49\text{mV}_{pp}$) was plotted against the output on a unified voltage scale (Figure \ref{fig:gain}). The clean note was captured at $1.0\times$ DAQ gain and the Red Llama output through the $0.5\times$ divider; both are referred to the instrument / pedal output.
 
-The circuit exhibits a measured gain of $\approx 31\text{dB}$ (a voltage ratio of $\approx 36\times$), driving the instrument-level input to near-rail voltages.
+The output reaches $3.54\text{V}_{pp}$, a peak-to-peak gain of $\approx 72\times$ ($37.1\text{dB}$; Notebook~\texttt{02}, \S3). The figure is approximate: the clean and Red Llama captures are separate plucks, and the divider ratio is nominal.
 
 \subsection{The Saturation Gradient}
 The visual density of the output waveform indicates the physical mechanism of the distortion. Plotting $V_{out}$ as a function of $V_{in}$ reveals the device's \textbf{Transfer Characteristic}.
 \begin{itemize}
-  \item \textbf{Linear Region:} For small excursions ($|V_{in}| < 50\text{mV}$), the response is ohmic ($R^2 \approx 0.99$).
-  \item \textbf{Saturation Region:} As $V_{in}$ approaches the rails ($0\text{V}$ and $3.3\text{V}$), the derivative $dV_{out}/dV_{in}$ approaches zero continuously.
+  \item \textbf{High-Gain Region:} Around zero, the output changes steeply with the input.
+  \item \textbf{Saturation Region:} As the output approaches its limits, the slope $dV_{out}/dV_{in}$ falls toward zero continuously, without a sharp corner.
 \end{itemize}
 
 Mathematically, this distinguishes the CMOS topology from standard silicon diode clipping. While diodes exhibit a sharp discontinuity ($dV/dt \to \infty$) at the forward voltage threshold ($V_f$), the CMOS inverter behaves as a continuous hyperbolic tangent ($\tanh$) function, resulting in a smoother transition into saturation.
@@ -605,31 +634,180 @@ Mathematically, this distinguishes the CMOS topology from standard silicon diode
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/fig_llama_gain.pdf}
-  \caption{\textbf{Gain Stage Characterization.} The circuit provides $\approx 31\text{dB}$ of gain. The squaring of the waveform indicates the onset of heavy saturation, where the MOSFETs collide with the power supply rails.}
+  \caption{\textbf{Gain Stage Characterization.} The circuit provides $\approx 37\text{dB}$ of gain. The squaring of the waveform indicates the onset of heavy saturation, where the MOSFETs collide with the power supply rails. Source: Notebook~\texttt{02}, \S4; over the plotted 25\,ms window the gain is $37.4\text{dB}$.}
   \label{fig:gain}
 \end{figure}
 
 \section{Topology \& Harmonic Fingerprint}
+\label{sec:topology}
 The primary engineering hypothesis of this project was that the CD4049 CMOS Hex Inverter, despite being a digital logic chip, behaves analogously to a Vacuum Tube Triode when biased into its linear region. Figure \ref{fig:topology} presents the phase-locked comparison of the Clean vs. Driven signal.
 
 \subsection{Time Domain: The Soft Knee}
-As seen in the left panel of Figure \ref{fig:topology}, the waveform peaks exhibit a ``Soft Knee'' compression. This confirms the continuous transfer function described in Section 6.3. The peaks are not sheared off flatly; they are rounded. This preserves the dynamic ``feel'' of the instrument, allowing the player to control the distortion amount via pick attack velocity.
+As seen in the left panel of Figure \ref{fig:topology}, the waveform peaks exhibit a ``Soft Knee'' compression. This confirms the continuous transfer function described in Section \ref{sec:gain}. The peaks are not sheared off flatly; they are rounded. This preserves the dynamic ``feel'' of the instrument, allowing the player to control the distortion amount via pick attack velocity.
 
 \subsection{Frequency Domain: Even-Order Dominance}
-The spectral density analysis (Figure \ref{fig:topology}, Right) reveals the harmonic signature of this topology.
+The spectral density analysis (Figure \ref{fig:topology}, Right) reveals the harmonic signature of this topology (Notebook~\texttt{02}, \S7).
 \begin{itemize}
   \item \textbf{Even Harmonics ($2^{nd}, 4^{th}$):} There is a distinct, high-amplitude presence of the 2nd harmonic (the Octave). This asymmetry is mathematically consistent with the single-ended transfer function of vacuum tubes and is responsible for the perceived ``warmth'' of the circuit.
   \item \textbf{Odd Harmonics ($3^{rd}, 5^{th}$):} While present, they do not completely dominate the spectrum as they would in a symmetrical diode-clipping circuit.
 \end{itemize}
 
-The clear resolution of these harmonic peaks ($\approx 5.9\,\text{Hz/bin}$) validates the decision to use a custom Hann-windowed FFT pipeline rather than a standard real-time streaming view.
+The clear resolution of these harmonic peaks ($5.96\,\text{Hz/bin}$) validates the decision to use a custom Hann-windowed FFT pipeline rather than a standard real-time streaming view.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=1.0\textwidth]{figures/fig_analysis_topology.pdf}
-  \caption{\textbf{Empirical Validation of CMOS Topology.} (A) Phase-locked time domain analysis reveals 'soft knee' compression characteristics distinct from hard diode clipping. (B) Harmonic fingerprinting confirms a dominant 2nd harmonic (octave) and strong even-order series, consistent with the asymmetrical saturation of vacuum tube triodes.}
+  \caption{\textbf{Empirical Validation of CMOS Topology.} (A) Phase-locked time domain analysis reveals 'soft knee' compression characteristics distinct from hard diode clipping. (B) Harmonic fingerprinting confirms a dominant 2nd harmonic (octave) and strong even-order series, consistent with the asymmetrical saturation of vacuum tube triodes. Source: Notebook~\texttt{02}, \S9.}
   \label{fig:topology}
 \end{figure}
+
+\section{Active Signal Injection: Transfer Function Analysis}
+\label{sec:transfer}
+The guitar captures above characterize the DUT at a single, uncontrolled operating point. To measure its behavior across frequency, the host laptop's audio DAC was used as a signal generator, driving the DUT through a TRS-to-TS adapter cable. Four captures were taken (Table \ref{tab:stimuli}).
+
+\begin{table}[htbp]
+  \centering
+  \small\sffamily
+  \renewcommand{\arraystretch}{1.3}
+  \rowcolors{2}{TableRow}{white}
+  \begin{tabular}{@{} l l l l @{}}
+    \toprule
+    \rowcolor{TableHeader}
+    \textbf{\textcolor{white}{Capture}} &
+    \textbf{\textcolor{white}{Stimulus}} &
+    \textbf{\textcolor{white}{Signal Path}} &
+    \textbf{\textcolor{white}{DAQ Mode}} \\
+    \midrule
+    Source sweep & Log sweep, 20\,Hz--20\,kHz, 5\,s & Laptop $\to$ DAQ (loopback) & Stream \\
+    DUT sweep    & Log sweep, 20\,Hz--20\,kHz, 5\,s & Laptop $\to$ Red Llama (max gain) $\to$ DAQ & Stream \\
+    Triangle     & 100\,Hz triangle & Source and DUT captured separately & Burst \\
+    Sine         & 1\,kHz sine & Laptop $\to$ Red Llama $\to$ DAQ & Burst \\
+    \bottomrule
+  \end{tabular}
+  \caption{Active signal injection captures. Source: Notebook~\texttt{03} (acquisition), Notebook~\texttt{04}, \S2.}
+  \label{tab:stimuli}
+\end{table}
+
+\subsection{The Stream-Mode Discontinuity Problem}
+A 5\,s sweep does not fit in the 16,384-sample ($\approx 168$\,ms) burst buffer, so the sweeps were captured in the firmware's stream mode. Stream mode is request--response: the host requests a 1,024-sample block, the RP2040 samples it ($10.5$\,ms), transmits it over USB, and waits for the next request. Analysis of the captures shows a block period of $\approx 13.9$\,ms, so roughly 25\% of wall-clock time falls into untimed gaps between blocks. Concatenated, the blocks form a signal with a phase discontinuity at every block boundary (sample-to-sample jumps $100$--$166\times$ larger than elsewhere; Notebook~\texttt{04}, \S3).
+
+The standard technique for swept-sine measurement, Exponential Sine Sweep (ESS) deconvolution,\cite{farina2000_swept_sine} convolves the whole response with an inverse sweep and therefore requires a phase-continuous recording. With 357 untimed gaps it is not applicable to these captures.
+
+\subsection{Chunked Harmonic Fitting}
+Although the capture as a whole is discontinuous, each block is gap-free, and a 5\,s log sweep is quasi-stationary over $10.5$\,ms (the frequency changes by $<1.5\%$ within a block; Notebook~\texttt{04}, \S3). The analysis therefore treats each block as an independent measurement:
+
+\begin{enumerate}
+  \item \textbf{Timing Recovery.} The sweep's instantaneous frequency is $f(t) = f_1 R^{t}$ with $R = (f_2/f_1)^{1/T}$. The dominant frequency of each block (from a zero-padded, Hann-windowed FFT) implies a sweep time $t_k$. A robust line fit $t_k = t_0 + k\Delta$ recovers the block period ($\Delta = 13.88$\,ms source, $14.03$\,ms DUT; Notebook~\texttt{04}, \S3) and extrapolates to low-frequency blocks where a direct estimate is unreliable.
+  \item \textbf{Harmonic Model.} With $\tau$ the time from the block centre and $f_k$ its centre frequency, the exact sweep phase is
+  \begin{equation}
+    \phi_k(\tau) = \frac{2\pi f_k}{\ln R}\left(R^{\tau} - 1\right),
+  \end{equation}
+  and each block is fitted by linear least squares to
+  \begin{equation}
+    x(\tau) = c_0 + \sum_{h=1}^{5} \left[a_h \cos\left(h\,\phi_k(\tau)\right) + b_h \sin\left(h\,\phi_k(\tau)\right)\right],
+  \end{equation}
+  giving the amplitude of harmonic $h$ as $A_h = \sqrt{a_h^2 + b_h^2}$.
+  \item \textbf{Normalization.} The DUT/source ratio of fundamental amplitudes cancels the response of the laptop DAC and the DAQ front end. The source capture's own harmonics define the distortion floor of the measurement chain.
+\end{enumerate}
+
+Blocks holding less than one cycle ($f < f_s/1024 \approx 95$\,Hz) are excluded. The method was verified against synthetic stream captures with random gaps and timing jitter, recovering a known first-order low-pass response within $0.5$\,dB and the analytic harmonics of a polynomial nonlinearity within $1$\,dB (\texttt{tests/test\_chunked\_sweep.py}). The implementation is \texttt{sysaudio.chunked\_sweep} (Appendix \ref{app:chunked}).
+
+\subsection{Frequency Response}
+The DUT is flat within $0.5$\,dB from $97$\,Hz to $3.4$\,kHz, then rolls off gently: $-1$\,dB at $5.8$\,kHz, $-2$\,dB at $11.9$\,kHz and $-2.8$\,dB at $19.1$\,kHz (Figure \ref{fig:transfer_bode}, top; Notebook~\texttt{04}, \S4). The shallow slope is consistent with a single-pole low-pass formed by the inverters' feedback network, with its corner near the top of the audio band.
+
+This measurement was made at maximum gain, where the circuit is heavily saturated. A saturated stage's output level is set largely by its clipping ceiling rather than by its input, which tends to flatten the apparent response. The small-signal response, including the low-frequency corner of the coupling capacitors (below the $\approx 95$\,Hz analysis floor), remains to be measured at low gain.
+
+\subsection{Harmonic Distortion vs. Frequency}
+The harmonic profile is essentially independent of frequency up to $\approx 5$\,kHz (Figure \ref{fig:transfer_bode}, bottom; Notebook~\texttt{04}, \S4): median levels over 200\,Hz--5\,kHz are $H_2 = -12.9$, $H_3 = -12.8$, $H_4 = -15.3$ and $H_5 = -23.7$\,dBc. $H_2$ and $H_3$ are equal, but $H_4$ sits $8$\,dB above $H_5$, an early sign that the series is not symmetric (Section \ref{sec:evenodd}). Above $5$\,kHz the harmonics themselves fall into the treble roll-off, and $H_2$ drops to $-18.3$\,dBc at $19.1$\,kHz. The source loopback's harmonics sit at $\approx -47$\,dBc throughout, more than $30$\,dB below the DUT's, confirming that the measured distortion is produced by the Red Llama and not by the measurement chain.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/fig_transfer_bode.pdf}
+  \caption{\textbf{Swept Transfer Function (Max Gain).} Top: fundamental magnitude response, DUT/source, normalized to 0\,dB. Bottom: harmonics 2--5 relative to the fundamental, against the source loopback's distortion floor (dashed). Recovered from stream-mode captures by chunked harmonic fitting. Source: Notebook~\texttt{04}, \S4.}
+  \label{fig:transfer_bode}
+\end{figure}
+
+\subsection{Large-Signal Transfer Curve}
+Plotting output against input for a $100$\,Hz triangle (Figure \ref{fig:transfer_curve}; Notebook~\texttt{04}, \S5) traces the saturation curve directly. Its shape refines the earlier findings in three ways:
+\begin{itemize}
+  \item \textbf{Soft Saturation:} Gain is steep around zero and decreases smoothly toward the rails, with no sharp clipping threshold.
+  \item \textbf{Asymmetry:} The pedal output peaks at $+2.11$\,V but only $-1.81$\,V (ratio $1.17$; $1.35$ for the 1\,kHz sine), referred through the DAQ's $0.5\times$ divider. Unequal clipping of the two half-cycles is the physical origin of the even harmonics.
+  \item \textbf{Memory:} The rising and falling halves trace different paths, forming a loop rather than a single curve. The coupling capacitors add phase shift at $100$\,Hz, visible as ``droop'' on the flat tops. Part of the loop may be residual misalignment, since source and DUT were captured separately.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\textwidth]{figures/fig_transfer_curve.pdf}
+  \caption{\textbf{Large-Signal Transfer Characteristic.} DUT output vs.\ source input for a 100\,Hz triangle, both normalized. The sigmoid is asymmetric and opens into a loop due to capacitive coupling. Source: Notebook~\texttt{04}, \S5.}
+  \label{fig:transfer_curve}
+\end{figure}
+
+\subsection{Cross-Validation Against Burst Capture}
+A 1\,kHz sine captured in burst mode is gap-free and independent of the sweep analysis. Its harmonic spectrum agrees with the chunked sweep at 1\,kHz to within $0.2$\,dB (Table \ref{tab:crosscheck}, Figure \ref{fig:thd}; Notebook~\texttt{04}, \S6), validating the method on real data.
+
+\begin{table}[htbp]
+  \centering
+  \small\sffamily
+  \renewcommand{\arraystretch}{1.3}
+  \rowcolors{2}{TableRow}{white}
+  \begin{tabular}{@{} l r r @{}}
+    \toprule
+    \rowcolor{TableHeader}
+    \textbf{\textcolor{white}{Harmonic}} &
+    \textbf{\textcolor{white}{Burst Sine (dBc)}} &
+    \textbf{\textcolor{white}{Chunked Sweep (dBc)}} \\
+    \midrule
+    $H_2$ & $-12.9$ & $-12.9$ \\
+    $H_3$ & $-12.8$ & $-12.8$ \\
+    $H_4$ & $-15.2$ & $-15.2$ \\
+    $H_5$ & $-23.7$ & $-23.5$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Harmonic levels at 1\,kHz from two independent capture modes. Source: Notebook~\texttt{04}, \S6.}
+  \label{tab:crosscheck}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/fig_thd_fingerprint.pdf}
+  \caption{\textbf{Steady-State Harmonic Fingerprint at 1\,kHz.} Burst-mode capture of the DUT driven by a 1\,kHz sine. $H_2$ and $H_3$ are equal, while the higher even harmonics ($4f$, $6f$, $8f$) outlast the odd ones ($5f$, $7f$). Source: Notebook~\texttt{04}, \S6.}
+  \label{fig:thd}
+\end{figure}
+
+\subsection{Even vs. Odd Harmonic Balance}
+\label{sec:evenodd}
+Comparing $H_2$ with $H_3$ alone hides the shape of the full series. Table \ref{tab:evenodd} gives the ratio of even-order ($H_2, H_4, \dots$) to odd-order ($H_3, H_5, \dots$) harmonic energy over $H_2$--$H_8$, computed in Notebook~\texttt{02}, \S7 (guitar) and Notebook~\texttt{04}, \S6 (1\,kHz sine) with a common method (measured fundamental, main-lobe energy, local noise floor removed).
+
+\begin{table}[htbp]
+  \centering
+  \small\sffamily
+  \renewcommand{\arraystretch}{1.3}
+  \rowcolors{2}{TableRow}{white}
+  \begin{tabular}{@{} l r r @{}}
+    \toprule
+    \rowcolor{TableHeader}
+    \textbf{\textcolor{white}{Stimulus}} &
+    \textbf{\textcolor{white}{Clean Input}} &
+    \textbf{\textcolor{white}{Red Llama Output}} \\
+    \midrule
+    1\,kHz sine     & -- (all harmonics $<0.01$) & $1.34$ \\
+    Guitar low E    & $1.05$ & $1.88$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Even/odd harmonic energy ratio ($H_2$--$H_8$). Values above 1 mean the even series dominates. Source: Notebook~\texttt{02}, \S7 and Notebook~\texttt{04}, \S6.}
+  \label{tab:evenodd}
+\end{table}
+
+With the pure tone, $H_2$ and $H_3$ are equal ($0.226$ vs.\ $0.230$ of the fundamental), but the higher orders split: $H_4$, $H_6$ and $H_8$ ($0.173$, $0.122$, $0.083$) outlast $H_5$ and $H_7$ ($0.065$, $0.003$). Starting from a clean source, the circuit therefore produces an even-dominant series. With the guitar, whose clean note is already harmonically rich but balanced, the circuit raises $H_2$ from $1.47$ to $2.21$ and lowers $H_3$ from $1.73$ to $1.31$.
+
+Both stimuli thus confirm the even-order dominance reported in Section \ref{sec:topology}, the signature of asymmetric clipping. The effect is stronger with the guitar, whose input harmonics intermodulate in the nonlinearity and whose clean and Red Llama captures are separate, unmatched plucks.
+
+\subsection{Limitations}
+\begin{itemize}
+  \item All DUT measurements were taken at maximum gain; the small-signal response was not measured.
+  \item No data is available below $\approx 95$\,Hz, and no phase response is available, since blocks are not phase-continuous.
+  \item Absolute gain is not reported: the source and DUT sweeps were played at different amplitudes, and playback volume was not logged.
+\end{itemize}
 
 % =============================================================================
 % CHAPTER 7: CONCLUSION
@@ -649,55 +827,59 @@ The analytical phase (Chapter 6) provided quantitative validation of the system'
     The transfer characteristic analysis confirmed that the CD4049 CMOS Hex Inverter, when biased into the linear region, exhibits a continuous hyperbolic tangent ($\tanh$) saturation curve.\cite{ti_cd4049ub_datasheet} The absence of derivative discontinuities at the saturation threshold (the "Soft Knee") mathematically distinguishes this circuit from standard silicon diode clipping.
 
   \item \textbf{Harmonic Fingerprint:}
-    Spectral decomposition revealed a dominant 2nd-order harmonic ($f = 2f_0$) and a decaying series of even-order harmonics. This confirms that the CMOS inverter mimics the asymmetrical transfer function of single-ended Class A vacuum tube triodes, validating the psychoacoustic description of the device as "warm" or "amp-like."\cite{sonarworks_distortion_even_odd}
+    Spectral decomposition revealed a dominant 2nd-order harmonic ($f = 2f_0$) and a decaying series of even-order harmonics. This confirms that the CMOS inverter mimics the asymmetrical transfer function of single-ended Class A vacuum tube triodes, validating the psychoacoustic description of the device as "warm" or "amp-like."\cite{sonarworks_distortion_even_odd} A pure-tone stimulus confirms the even-order dominance: from a clean 1\,kHz source the circuit produces $1.34\times$ more even- than odd-harmonic energy ($1.88\times$ with the guitar, versus $1.05$ for the clean note).
+
+  \item \textbf{Swept Transfer Function:}
+    At maximum gain the DUT is flat within $0.5$\,dB from $97$\,Hz to $3.4$\,kHz, rolling off gently to $-2.8$\,dB at $19.1$\,kHz. Its distortion is heavy and frequency-independent ($H_2 \approx H_3 \approx -13$\,dBc), more than $30$\,dB above the measurement chain's floor, and the large-signal transfer curve is an asymmetric sigmoid with capacitive memory.
 
   \item \textbf{Instrumentation Efficacy:}
     The custom RP2040 Data Acquisition System met or exceeded all design requirements.
     \begin{itemize}
-      \item \textbf{Bandwidth:} A calibrated sample rate of $97.8\,\text{kSps}$ was achieved, providing a Nyquist frequency of $\approx 48.9\,\text{kHz}$, well beyond the audible spectrum.\cite{nyquist_shannon_sampling}
-      \item \textbf{Fidelity:} The system demonstrated a read noise floor of $1.3\text{mV}_{rms}$ and a dynamic range (SNR) of $\approx 42\,\text{dB}$ relative to the saturated signal, proving it is a viable tool for audio frequency analysis.
+      \item \textbf{Bandwidth:} A sample rate of $97.69\,\text{kSps} \pm 0.01\%$ was verified against crystal-referenced tones, providing a Nyquist frequency of $48.8\,\text{kHz}$, well beyond the audible spectrum.\cite{nyquist_shannon_sampling}
+      \item \textbf{Fidelity:} The system demonstrated a read noise floor of $1.29\text{mV}_{rms}$ and a full-scale dynamic range of $59.1\,\text{dB}$ ($9.5$ effective bits), proving it is a viable tool for audio frequency analysis.
     \end{itemize}
 \end{enumerate}
 
-\section{Phase II: Active Signal Injection (In Progress)}
-Current characterization has relied on passive burst capture of organic instrument input. To achieve laboratory-grade transfer function plotting, the project is currently transitioning to an \textbf{Active Signal Injection} phase.
-
-A custom Host-to-Device interface is under development, utilizing the host laptop's High-Definition Audio DAC as a signal generator.
+\section{Phase II: Active Signal Injection}
+\label{sec:phase2}
+Phase II replaced passive instrument capture with active signal injection, using the host laptop's audio DAC as a signal generator.
 \begin{itemize}
-  \item \textbf{Hardware Interface:} A custom impedance-matching cable (Aux TRS $\to$ Mono TS) has been fabricated to bridge the consumer line-level output of the host to the high-impedance instrument input of the DUT.
-  \item \textbf{Software Generation:} A Python-based Direct Digital Synthesis (DDS) engine has been written to generate precise sine sweeps (20Hz--20kHz) and step functions.
+  \item \textbf{Hardware Interface:} A custom impedance-matching cable (Aux TRS $\to$ Mono TS) bridges the consumer line-level output of the host to the high-impedance instrument input of the DUT.
+  \item \textbf{Software Generation:} A Python-based Direct Digital Synthesis (DDS) engine generates logarithmic sine sweeps (20\,Hz--20\,kHz) and steady-state test tones.
+  \item \textbf{Analysis:} Chunked harmonic fitting (Section \ref{sec:transfer}) recovers the frequency response and harmonic distortion versus frequency from stream-mode captures, despite the untimed gaps between blocks.
 \end{itemize}
 
-This upgrade will allow for the automation of Bode plotting and Total Harmonic Distortion (THD) sweeping in the next revision of this technical report.
+Phase II also exposed the main limitation of the v0 prototype: stream mode cannot record a phase-continuous signal longer than one burst. This rules out phase measurement and ESS deconvolution, and directly motivates the continuous-acquisition architecture proposed below.
 
-\section{Future Roadmap: The Silicon Revision (v2.0)}
-The current device, constructed on perfboard with discrete modules, serves as a validated prototype (v1.0). While effective for characterizing soft-clipping topologies, the reliance on the RP2040's internal 12-bit ADC and manual jumper configuration limits its utility as a precision laboratory standard.
+\section{Future Roadmap: The Silicon Revision (v1.0)}
+The current device, constructed on perfboard with discrete modules, serves as a validated prototype (v0). While effective for characterizing soft-clipping topologies, the reliance on the RP2040's internal 12-bit ADC and manual jumper configuration limits its utility as a precision laboratory standard.
 
-Based on the empirical data collected in this report, a comprehensive "Silicon Revision" (v2.0) is proposed to transition the system from a development tool to an autonomous measurement engine.
+Based on the empirical data collected in this report, a comprehensive "Silicon Revision" (v1.0) is proposed as the first product iteration, transitioning the system from a development tool to an autonomous measurement engine.
 
 \subsection{Hardware Architecture}
 The next iteration will migrate from modular sub-assemblies to a unified \textbf{4-layer PCB} utilizing Surface Mount Devices (SMD).
 \begin{itemize}
-  \item \textbf{Noise Floor:} A dedicated internal ground plane will replace the star-ground wiring to further suppress Electromagnetic Interference (EMI), targeting a noise floor of $<-80\text{dB}$.
+  \item \textbf{Noise Floor:} A dedicated internal ground plane will replace the star-ground wiring to further suppress Electromagnetic Interference (EMI), with a target noise floor below $-80\text{dB}$.
   \item \textbf{Connectivity:} Standard 0.1" headers will be replaced with shielded \textbf{BNC connectors} to interface with standard oscilloscope probes.
+  \item \textbf{Continuous Acquisition:} DMA-driven, double-buffered sampling will stream data without the inter-block gaps of the prototype's request--response protocol (Section \ref{sec:transfer}), enabling phase-continuous captures of arbitrary length.
 \end{itemize}
 
 \subsection{Signal Chain Evolution}
 To achieve \textit{Audio Analyzer} grade performance, the internal data converters will be bypassed in favor of dedicated I2S codecs:
 \begin{itemize}
   \item \textbf{Acquisition (ADC):} An external 24-bit I2S ADC (e.g., PCM1808) will replace the internal 12-bit converter. This will increase the dynamic range significantly, allowing for the resolution of harmonic distortion products currently buried in the quantization noise.
-  \item \textbf{Generation (DAC):} A high-resolution DAC (e.g., PCM5102) will be integrated directly onto the bus. This eliminates the dependency on the host laptop's sound card (described in Section 7.4) and allows the MCU to generate perfectly synchronized test tones for automated Bode plotting.
+  \item \textbf{Generation (DAC):} A high-resolution DAC (e.g., PCM5102) will be integrated directly onto the bus. This eliminates the dependency on the host laptop's sound card (described in Section \ref{sec:phase2}) and allows the MCU to generate perfectly synchronized test tones for automated Bode plotting.
 \end{itemize}
 
 \subsection{Programmable Analog Front End (AFE)}
-The current manual configuration (physical jumpers for Gain and AC/DC coupling) introduces mechanical wear and prevents remote automation. The v2.0 AFE will utilize:
+The current manual configuration (physical jumpers for Gain and AC/DC coupling) introduces mechanical wear and prevents remote automation. The v1.0 AFE will utilize:
 \begin{itemize}
   \item \textbf{Relay Switching:} To toggle between AC and DC coupling modes without signal degradation.
   \item \textbf{Programmable Gain Amplifier (PGA):} To provide software-controlled attenuation, enabling the system to auto-range between millivolt-level guitar pickups and high-voltage modular synthesizer rails ($\pm 12\text{V}$).
 \end{itemize}
 
 \section{Closing Statement}
-The \textbf{Systems Audio Lab} project stands as a proof-of-concept for the \textit{systems} approach to maker-electronics. By refusing to treat the supply chain, power delivery, and validation as externalities, the project yielded a device with a verified noise floor and a mathematically characterized distortion profile. The proposed evolution to v2.0 demonstrates that the distinction between software code and silicon hardware is increasingly arbitrary; both are simply distinct layers of the same engineering stack.
+The \textbf{Systems Audio Lab} project stands as a proof-of-concept for the \textit{systems} approach to maker-electronics. By refusing to treat the supply chain, power delivery, and validation as externalities, the project yielded a device with a verified noise floor and a mathematically characterized distortion profile. The proposed evolution to v1.0 demonstrates that the distinction between software code and silicon hardware is increasingly arbitrary; both are simply distinct layers of the same engineering stack.
 
 % =============================================================================
 % APPENDIX
@@ -719,8 +901,13 @@ The \textbf{Systems Audio Lab} project stands as a proof-of-concept for the \tex
 \lstinputlisting[language=Python, caption=src/dsp.py]{../oscilloscope-rp2040/sysaudio/dsp.py}
 
 \section{Host: Function Generator Logic (Phase II)}
-\textit{Core logic for the "Laptop-as-Generator" system, capable of generating frequency sweeps for future transfer function analysis.}
+\textit{Core logic for the "Laptop-as-Generator" system, used to generate the frequency sweeps analyzed in Section \ref{sec:transfer}.}
 \lstinputlisting[language=Python, caption=scripts/signal/play\_sweep.py]{../oscilloscope-rp2040/scripts/signal/play_sweep.py}
+
+\section{Host: Chunked Sweep Analysis (Phase II)}
+\label{app:chunked}
+\textit{Per-block harmonic fitting used to recover transfer functions from stream-mode captures (Ref. Section \ref{sec:transfer}).}
+\lstinputlisting[language=Python, caption=sysaudio/chunked\_sweep.py]{../oscilloscope-rp2040/sysaudio/chunked_sweep.py}
 
 % =============================================================================
 % REFERENCES

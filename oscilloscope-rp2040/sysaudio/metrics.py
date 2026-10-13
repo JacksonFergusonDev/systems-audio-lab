@@ -81,86 +81,6 @@ def compute_spectrum_data(
     return dsp.compute_spectrum(dsp.remove_dc(signal), fs)
 
 
-def compute_bode_data_broken(
-    sig_src: np.ndarray, sig_dut: np.ndarray, fs: float
-) -> dict[str, Any]:
-    """
-    Derive the System Transfer Function H(f) using the H1 Estimator method.
-
-    Calculates H1 = Pxy / Pxx (Cross-Spectral Density / Power Spectral Density).
-    This method is robust against noise but sensitive to non-linearities.
-
-    Parameters
-    ----------
-    sig_src : np.ndarray
-        Source/Input signal.
-    sig_dut : np.ndarray
-        DUT/Output signal.
-    fs : float
-        Sampling rate in Hz.
-
-    Returns
-    -------
-    Dict[str, Any]
-        Dictionary containing frequencies, gain (dB), coherence, and peak metrics.
-    """
-    # 1. Alignment (Critical for phase correlation)
-    # Normalize for correlation calculation
-    norm_src = sig_src / np.max(np.abs(sig_src))
-    norm_dut = sig_dut / np.max(np.abs(sig_dut))
-
-    correlation = spsig.correlate(norm_dut, norm_src, mode="full")
-    lags = spsig.correlation_lags(norm_dut.size, norm_src.size, mode="full")
-    lag = lags[np.argmax(correlation)]
-
-    # Shift DUT to match Source
-    if lag > 0:
-        sig_dut_aligned = sig_dut[lag:]
-        sig_src_aligned = sig_src[: len(sig_dut_aligned)]
-    else:
-        sig_src_aligned = sig_src[-lag:]
-        sig_dut_aligned = sig_dut[: len(sig_src_aligned)]
-
-    # Truncate to matching length
-    n = min(len(sig_src_aligned), len(sig_dut_aligned))
-    x = sig_src_aligned[:n]
-    y = sig_dut_aligned[:n]
-
-    # 2. Compute Estimators (Welch's Method)
-    # 4096 samples gives ~23Hz resolution at 96kHz
-    nperseg = 4096
-
-    # pxx: Power Spectral Density of Input
-    f, pxx = spsig.welch(x, fs, nperseg=nperseg)
-    # pxy: Cross Spectral Density
-    _, pxy = spsig.csd(x, y, fs, nperseg=nperseg)
-    # cxy: Coherence (0 to 1 reliability metric)
-    _, cxy = spsig.coherence(x, y, fs, nperseg=nperseg)
-
-    # 3. Calculate H1 Transfer Function
-    h = pxy / pxx
-    gain_db = 20 * np.log10(np.abs(h) + 1e-9)
-
-    # 4. Smoothing
-    window_size = 5
-    gain_smooth = np.convolve(gain_db, np.ones(window_size) / window_size, mode="same")
-    coherence_smooth = np.convolve(cxy, np.ones(window_size) / window_size, mode="same")
-
-    # Find Peak (valid frequencies > 20Hz only)
-    valid_mask = (f > 20) & (f < 20000)
-    max_idx = np.argmax(gain_smooth[valid_mask])
-    # Adjust index relative to full array
-    real_idx = np.where(valid_mask)[0][max_idx]
-
-    return {
-        "freqs": f,
-        "gain_db": gain_smooth,
-        "coherence": coherence_smooth,
-        "peak_db": float(gain_smooth[real_idx]),
-        "peak_freq": float(f[real_idx]),
-    }
-
-
 def prepare_transfer_curve(
     sig_src: np.ndarray, sig_dut: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -172,11 +92,21 @@ def prepare_transfer_curve(
     Tuple[np.ndarray, np.ndarray]
         (aligned_source, aligned_dut) normalized to 1.0.
     """
-    norm_src = sig_src / np.max(np.abs(sig_src))
-    norm_dut = sig_dut / np.max(np.abs(sig_dut))
-    aligned_src = dsp.smart_align(norm_dut, norm_src)
-    n = min(len(aligned_src), len(norm_dut))
-    return aligned_src[:n], norm_dut[:n]
+    # Remove the ADC bias first; otherwise every point sits near +1.0.
+    src_ac = dsp.remove_dc(sig_src.astype(np.float64))
+    dut_ac = dsp.remove_dc(sig_dut.astype(np.float64))
+    norm_src = src_ac / np.max(np.abs(src_ac))
+    norm_dut = dut_ac / np.max(np.abs(dut_ac))
+
+    # Shift by slicing rather than rolling, so no wrapped samples are plotted.
+    corr = spsig.correlate(norm_src, norm_dut, mode="full")
+    lag = int(spsig.correlation_lags(norm_src.size, norm_dut.size)[np.argmax(corr)])
+    if lag >= 0:
+        src, dut = norm_src[lag:], norm_dut
+    else:
+        src, dut = norm_src, norm_dut[-lag:]
+    n = min(len(src), len(dut))
+    return src[:n], dut[:n]
 
 
 def extract_harmonics_list(
@@ -202,31 +132,19 @@ def extract_harmonics_list(
         DataFrame with columns [Harmonic, Order, Magnitude, Type], or None if
         fundamental is missing.
     """
-    freqs, mags = dsp.compute_spectrum(signal, fs)
-    window = 10
-
-    fund_mask = (freqs > fundamental_freq - window) & (
-        freqs < fundamental_freq + window
-    )
-    if not np.any(fund_mask):
+    f1, amps = dsp.harmonic_amplitudes(signal, fs, fundamental_freq, n_harmonics)
+    if f1 == 0.0:
         return None
 
-    fund_mag = np.max(mags[fund_mask])
-    data = []
-
-    for i in range(1, n_harmonics + 1):
-        target_f = fundamental_freq * i
-        mask = (freqs > target_f - window) & (freqs < target_f + window)
-        mag = np.max(mags[mask]) if np.any(mask) else 0.0
-
-        data.append(
-            {
-                "Harmonic": f"{i}f",
-                "Order": int(i),
-                "Magnitude": float(mag / fund_mag),
-                "Type": "Even" if i % 2 == 0 else "Odd",
-            }
-        )
+    data = [
+        {
+            "Harmonic": f"{i}f",
+            "Order": int(i),
+            "Magnitude": float(amps[i - 1]),
+            "Type": "Even" if i % 2 == 0 else "Odd",
+        }
+        for i in range(1, n_harmonics + 1)
+    ]
 
     return pd.DataFrame(data)
 
@@ -284,6 +202,10 @@ def generate_inverse_filter(
     This filter corrects the -3dB/octave slope of the log sweep (Pink Noise profile)
     to a flat White Noise profile during deconvolution.
 
+    ESS deconvolution requires a phase-continuous capture of the whole sweep.
+    Stream-mode DAQ captures have gaps between chunks and are not suitable; use
+    `chunked_sweep` for those.
+
     Returns
     -------
     np.ndarray
@@ -340,86 +262,3 @@ def compute_impulse_response(
     peak_idx = search_start + peak_idx_local
 
     return ir_raw, int(peak_idx)
-
-
-def compute_bode_data(
-    sig_src: np.ndarray, sig_dut: np.ndarray, fs: float
-) -> dict[str, Any]:
-    """
-    Derive the Linear Frequency Response using ESS Deconvolution.
-
-    Applies Farina's method with asymmetric windowing to separate the linear
-    impulse response from harmonic distortion products.
-
-    Parameters
-    ----------
-    sig_src : np.ndarray
-        Unused in this method (implied by sweep parameters), kept for API consistency.
-    sig_dut : np.ndarray
-        Recorded sweep response from DUT.
-    fs : float
-        Sampling rate in Hz.
-
-    Returns
-    -------
-    Dict[str, Any]
-        Dictionary containing frequency response, peak metrics, and IR preview.
-    """
-    f_start = 20.0
-    f_end = 20000.0
-    duration = 5.0
-
-    # 1. Deconvolve
-    ir, peak_idx = compute_impulse_response(sig_dut, fs, f_start, f_end, duration)
-
-    # 2. Asymmetric Windowing (The "Farina Cut")
-    # Pre-peak: Short (excludes harmonic pre-echoes)
-    # Post-peak: Long (captures bass decay/room response)
-    pre_window_ms = 2.0
-    post_window_ms = 50.0
-
-    pre_samples = int((pre_window_ms / 1000) * fs)
-    post_samples = int((post_window_ms / 1000) * fs)
-
-    start = max(0, peak_idx - pre_samples)
-    end = min(len(ir), peak_idx + post_samples)
-
-    ir_linear = ir[start:end]
-
-    # Apply Tukey window to edges to prevent leakage
-    win_len = len(ir_linear)
-    window = spsig.windows.tukey(win_len, alpha=0.1)
-    ir_windowed = ir_linear * window
-
-    # 3. FFT
-    freqs, mag_linear = dsp.compute_spectrum(ir_windowed, fs)
-
-    # Filter valid band
-    valid_mask = (freqs > f_start) & (freqs < f_end)
-    f_axis = freqs[valid_mask]
-    m_axis = mag_linear[valid_mask]
-
-    # Normalize to 0dB
-    if np.max(m_axis) > 0:
-        gain_db = 20 * np.log10(m_axis / np.max(m_axis))
-    else:
-        gain_db = np.zeros_like(m_axis)
-
-    # Smoothing
-    win_smooth = 20
-    gain_smooth = np.convolve(gain_db, np.ones(win_smooth) / win_smooth, mode="same")
-
-    peak_db = np.max(gain_smooth)
-    peak_freq = f_axis[np.argmax(gain_smooth)]
-
-    # IR Time Axis (Relative to Peak)
-    t_ir = (np.arange(len(ir_linear)) - pre_samples) / fs * 1000
-
-    return {
-        "freqs": f_axis,
-        "gain_db": gain_smooth,
-        "peak_db": float(peak_db),
-        "peak_freq": float(peak_freq),
-        "ir_preview": ir_linear,
-        "ir_time_ms": t_ir,
-    }

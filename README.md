@@ -5,8 +5,8 @@
 
 **A vertically integrated audio analysis platform.**
 
-![Analysis Status](https://img.shields.io/badge/analysis-in__progress-white?style=flat-square&color=white&labelColor=black)
-![Version](https://img.shields.io/badge/version-v1.0__prototype-white?style=flat-square&color=white&labelColor=black)
+![Analysis Status](https://img.shields.io/badge/analysis-complete-white?style=flat-square&color=white&labelColor=black)
+![Version](https://img.shields.io/badge/version-v0__prototype-white?style=flat-square&color=white&labelColor=black)
 ![Python](https://img.shields.io/badge/python-3.13-white?style=flat-square&color=white&labelColor=black)
 [![Ruff](https://img.shields.io/badge/style-ruff-white?style=flat-square&color=white&labelColor=black)](https://github.com/astral-sh/ruff)
 [![Mypy](https://img.shields.io/badge/mypy-checked-white?style=flat-square&color=white&labelColor=black)](https://mypy-lang.org/)
@@ -22,7 +22,7 @@ Most audio analysis relies on "black box" equipment. This project builds the **e
 1. **Power:** A custom linear regulator to eliminate switching noise.
 1. **Device:** A discrete CMOS overdrive circuit to generate soft-clipping distortion.
 1. **Probe:** A custom RP2040 oscilloscope to capture the waveform.
-1. **Analysis:** A Python pipeline to deconvolve the Transfer Function.
+1. **Analysis:** A Python pipeline to measure the Transfer Function and harmonic distortion.
 
 By owning every stage of the pipeline, this system eliminates the "dependency hell" of unknown hardware variables, allowing for precise correlation between **circuit topology** and **spectral output**.
 
@@ -31,15 +31,6 @@ By owning every stage of the pipeline, this system eliminates the "dependency he
 ### 📄 [Read the Full Engineering Report (PDF)](https://raw.githubusercontent.com/JacksonFergusonDev/systems-audio-lab/main/docs/systems_audio_tech_report.pdf)
 
 *A detailed technical report covering the full systems engineering approach: logistics automation, power supply design, analog circuit fabrication, and custom DAQ instrumentation for spectral validation.*
-
----
-
-## 🚧 Currently In Progress: Transfer Function Deconvolution
-
-Hardware and basic signal analysis are **complete and validated**. Transfer function analysis is under active development.
-
-- **Completed:** Waveform capture, harmonic analysis confirming soft-clipping topology and harmonic asymmetry (Notebooks `01` & `02`).
-- **In Progress:** Implementing **Exponential Sine Sweep (ESS) deconvolution** in Notebook `04` to separate linear frequency response from harmonic distortion components, enabling automated Bode plot generation.
 
 ---
 
@@ -86,7 +77,7 @@ This project consists of four interconnected subsystems, each enabling the next.
 - **The Problem:** Needed to measure the harmonic content of the overdrive circuit but didn't have an oscilloscope.
 - **The Solution:** Built a USB oscilloscope around the RP2040 microcontroller with custom analog signal conditioning.
 - **Architecture:** Store-and-forward firmware separates high-speed sampling from USB transmission to avoid data loss.
-- **Performance:** 97.8 kSps (calibrated against 60 Hz mains), 12-bit resolution, 1.3 mV noise floor.
+- **Performance:** 97.69 kSps (verified against crystal-referenced test tones), 12-bit ADC with 59 dB full-scale dynamic range (9.5 effective bits), 1.3 mV RMS noise floor.
 
 <img src="oscilloscope-rp2040/assets/oscilloscope_1.0_gain.jpg" width="45%" alt="Oscilloscope Build"> <img src="oscilloscope-rp2040/assets/oscilloscope_screen.png" width="54%" alt="Oscilloscope Screen">
 
@@ -144,10 +135,10 @@ python oscilloscope-rp2040/scripts/capture/record.py
 ├── oscilloscope-rp2040/       # Firmware (MicroPython) & Analysis Pipeline
 │   ├── firmware/              # RP2040 Sampling Logic
 │   ├── notebooks/             # Jupyter Analysis Notebooks
-│   │   ├── 01_instrument_acquisition.ipynb  # Waveform Capture 🟢
-│   │   ├── 02_instrument_analysis.ipynb     # Harmonic Analysis 🟢
-│   │   ├── 03_transfer_acquisition.ipynb    # Sine Sweep Generation 🟢
-│   │   └── 04_transfer_analysis.ipynb       # Deconvolution (In Progress) 🟡
+│   │   ├── 01_instrument_acquisition.ipynb  # Waveform Capture
+│   │   ├── 02_instrument_analysis.ipynb     # Harmonic Analysis
+│   │   ├── 03_transfer_acquisition.ipynb    # Sine Sweep Generation
+│   │   └── 04_transfer_analysis.ipynb       # Transfer Function Analysis
 │   ├── sysaudio/              # Analysis Library (FFT, Plotting, Signal Processing)
 │   └── schematics/            # Signal Conditioning Circuit Design
 ├── red-llama-build/           # Guitar Overdrive Test Circuit
@@ -157,11 +148,11 @@ python oscilloscope-rp2040/scripts/capture/record.py
 
 ---
 
-## 🔮 Future Roadmap: Silicon Revision (v2.0)
+## 🔮 Future Roadmap: Silicon Revision (v1.0)
 
 With the measurement chain validated, the next iteration focuses on **Determinism** and **Automation**.
 
-**Current State:** The v1.0 oscilloscope relies on CPU-polled USB Serial for data transmission. This introduces non-deterministic latency (jitter) dependent on the host OS scheduler.
+**Current State:** The v0 prototype oscilloscope relies on CPU-polled USB Serial for data transmission. This introduces non-deterministic latency (jitter) dependent on the host OS scheduler.
 
 **The Goal:** Design a custom PCB that implements a **Zero-Copy Architecture**, ensuring that sample timing is defined purely by hardware clocks, not software loops.
 
@@ -181,7 +172,7 @@ With the measurement chain validated, the next iteration focuses on **Determinis
 
 #### 3. Signal Chain Upgrade
 
-- **External ADC:** Replace the RP2040's internal 12-bit ADC with a **24-bit Audio Codec** (I2S). This increases dynamic range for measuring low-level harmonics (-90dB noise floor).
+- **External ADC:** Replace the RP2040's internal 12-bit ADC with a **24-bit Audio Codec** (I2S). This increases dynamic range for measuring low-level harmonics (target noise floor: -90dB).
 - **On-board DAC:** Integrate a DAC (PCM5102) to generate test signals directly from hardware, enabling self-contained frequency sweeps.
 
 #### 4. Programmable Input Stage

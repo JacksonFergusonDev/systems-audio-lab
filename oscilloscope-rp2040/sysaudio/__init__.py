@@ -8,4 +8,4 @@ from . import experiments as experiments
 from . import io as io
 from . import viz as viz
 
-__version__ = "1.0.0"
+__version__ = "0.10.0"

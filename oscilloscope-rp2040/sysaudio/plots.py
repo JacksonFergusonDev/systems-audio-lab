@@ -12,7 +12,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import to_rgba
 from scipy.interpolate import make_interp_spline
 
-from . import config, dsp, metrics
+from . import chunked_sweep, config, dsp, metrics
 
 # --- Style Configuration ---
 COLORS: dict[str, str] = {
@@ -71,6 +71,8 @@ def plot_gain_stage(
     """
     m = metrics.calculate_gain_metrics(sig_clean, sig_dirty, duration_ms=25, fs=fs)
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    # Shared scale, sized to the output, so the input's smallness stays visible
+    y_lim = 1.1 * float(np.max(np.abs(m["dirty_triggered"])))
 
     sns.lineplot(
         x=m["t"], y=m["clean_triggered"], ax=ax1, color=COLORS["clean"], alpha=0.8
@@ -79,13 +81,14 @@ def plot_gain_stage(
         f"Input: Clean DI (Vpp = {m['vpp_in'] * 1000:.1f} mV)", fontweight="bold"
     )
     ax1.set_ylabel("Voltage (V)")
-    ax1.set_ylim(-1.5, 1.5)
+    ax1.set_ylim(-y_lim, y_lim)
     ax1.grid(True, alpha=0.3)
 
     sns.lineplot(x=m["t"], y=m["dirty_triggered"], ax=ax2, color=COLORS["dirty"])
     ax2.set_title(f"Output: Red Llama (Vpp = {m['vpp_out']:.2f} V)", fontweight="bold")
     ax2.set_ylabel("Voltage (V)")
-    ax2.set_ylim(-1.5, 1.5)
+    ax2.set_xlabel("Time (ms)")
+    ax2.set_ylim(-y_lim, y_lim)
     ax2.grid(True, alpha=0.3)
 
     t_peak, y_peak = m["peak_coords"]
@@ -242,75 +245,74 @@ def analyze_harmonics_fixed(
         plt.show()
 
 
-def plot_bode_response(
+def plot_chunked_bode(
     sig_src: np.ndarray,
     sig_dut: np.ndarray,
     fs: float,
     savepath: str | None = None,
     show: bool = True,
-) -> None:
+) -> dict[str, np.ndarray]:
     """
-    Plot the Deconvolved Linear Frequency Response and Impulse Response.
+    Plot frequency response and harmonics vs frequency from stream-mode sweeps.
 
-    Uses Farina's method (ESS Deconvolution) to separate linear response
-    from harmonic distortion.
+    Uses per-chunk harmonic fitting (see `chunked_sweep`), which tolerates the
+    dead time between stream-mode chunks that breaks ESS deconvolution.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        The data computed by `chunked_sweep.compute_chunked_bode`.
     """
-    data = metrics.compute_bode_data(sig_src, sig_dut, fs)
+    data = chunked_sweep.compute_chunked_bode(sig_src, sig_dut, fs)
+    freqs = data["freqs"]
 
-    fig = plt.figure(figsize=(10, 8))
-    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
-
-    # --- Top Panel: Magnitude Response ---
-    ax1 = plt.subplot(gs[0])
-    ax1.semilogx(
-        data["freqs"],
-        data["gain_db"],
-        color=COLORS["dirty"],
-        linewidth=2,
-        label="Linear Response (Deconvolved)",
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(10, 8), sharex=True, gridspec_kw={"height_ratios": [1, 1.4]}
     )
 
+    # --- Top Panel: Fundamental Magnitude Response ---
+    ax1.semilogx(freqs, data["gain_db"], color=COLORS["dirty"], linewidth=2)
     ax1.set_title(
-        "Deconvolved Frequency Response (Farina Method)", fontsize=14, fontweight="bold"
-    )
-    ax1.set_ylabel("Normalized Gain (dB)")
-    ax1.grid(True, which="both", alpha=0.3)
-    ax1.set_xlim(20, 20000)
-    ax1.set_ylim(-40, 5)  # Focus on the passband
-
-    # Peak Annotation
-    ax1.axhline(data["peak_db"], color="gray", linestyle="--", alpha=0.5)
-    ax1.text(
-        25,
-        data["peak_db"] + 1,
-        f"Peak Resonance: {data['peak_freq']:.0f} Hz",
-        color=COLORS["dirty"],
+        "Frequency Response (Fundamental, DUT / Source)",
+        fontsize=14,
         fontweight="bold",
     )
-    ax1.legend(loc="lower right")
+    ax1.set_ylabel("Normalized Gain (dB)")
+    ax1.set_ylim(min(-6.0, float(np.nanmin(data["gain_db"])) - 1), 1)
+    ax1.grid(True, which="both", alpha=0.3)
 
-    # --- Bottom Panel: The Impulse Response ---
-    ax2 = plt.subplot(gs[1])
-    ir = data["ir_preview"]
-    t_ir = data["ir_time_ms"]
-
-    ax2.plot(t_ir, ir, color=COLORS["odd"], linewidth=1)
-    ax2.set_title(
-        "Extracted Impulse Response (Causal Window)", fontsize=10, fontweight="bold"
+    # --- Bottom Panel: Harmonics Relative to Fundamental ---
+    for i in range(data["dut_harmonics_dbc"].shape[1]):
+        h = i + 2
+        ax2.semilogx(
+            freqs,
+            data["dut_harmonics_dbc"][:, i],
+            color=COLORS["even"] if h % 2 == 0 else COLORS["odd"],
+            linewidth=2 if h <= 3 else 1,
+            alpha=1.0 if h <= 3 else 0.6,
+            label=f"H{h} (DUT)",
+        )
+    ax2.semilogx(
+        freqs,
+        np.nanmax(data["src_harmonics_dbc"], axis=1),
+        color=COLORS["noise"],
+        linestyle="--",
+        label="Source distortion floor",
     )
-    ax2.set_xlabel("Time relative to Linear Peak (ms)")
-    ax2.set_xlim(min(t_ir), max(t_ir))
-    ax2.set_yticks([])
-    ax2.grid(True, alpha=0.3)
-    # Mark the peak
-    ax2.axvline(0, color=COLORS["dirty"], linestyle=":", alpha=0.6, label="Linear Peak")
-    ax2.legend(loc="upper right", fontsize=8)
+    ax2.set_title("Harmonic Distortion vs. Frequency", fontsize=12, fontweight="bold")
+    ax2.set_ylabel("Level re: Fundamental (dBc)")
+    ax2.set_xlabel("Fundamental Frequency (Hz)")
+    ax2.set_xlim(freqs[0], freqs[-1])
+    ax2.grid(True, which="both", alpha=0.3)
+    ax2.legend(loc="center left", fontsize=9, ncol=2)
 
     plt.tight_layout()
     if savepath:
         save_pdf_svg(fig, savepath)
     if show:
         plt.show()
+
+    return data
 
 
 def plot_transfer_curve(
@@ -329,7 +331,15 @@ def plot_transfer_curve(
 
     # Decimate for scatter performance
     step = max(1, len(x) // 5000)
-    plt.scatter(x[::step], y[::step], c=x[::step], cmap="coolwarm", alpha=0.1, s=2)
+    plt.scatter(
+        x[::step],
+        y[::step],
+        c=x[::step],
+        cmap="coolwarm",
+        alpha=0.1,
+        s=2,
+        rasterized=True,
+    )
     plt.plot(
         [-1, 1], [-1, 1], color="gray", linestyle="--", alpha=0.5, label="Linear Unity"
     )
@@ -344,20 +354,65 @@ def plot_transfer_curve(
     plt.grid(True, alpha=0.3)
     plt.xlim(-1.1, 1.1)
     plt.ylim(-1.1, 1.1)
-    plt.text(
-        -0.8, 0.9, "Hard Rail (Saturation)", color=COLORS["dirty"], fontweight="bold"
+    plt.legend(loc="upper left", fontsize=9)
+
+    # --- Feature annotations, located from the data ---
+    arrow = {"arrowstyle": "->", "color": "black", "lw": 1}
+    i_max, i_min = int(np.argmax(y)), int(np.argmin(y))
+    plt.annotate(
+        f"Positive saturation\n(soft ceiling, peak {y[i_max]:+.2f})",
+        xy=(x[i_max], y[i_max]),
+        xytext=(-0.15, 0.55),
+        ha="right",
+        color=COLORS["dirty"],
+        fontweight="bold",
+        arrowprops=arrow,
     )
-    plt.text(0, 0.2, "Linear Region", ha="center", color=COLORS["odd"])
+    plt.annotate(
+        f"Negative saturation\n(soft floor, peak {y[i_min]:+.2f})",
+        xy=(x[i_min], y[i_min]),
+        xytext=(0.45, -0.95),
+        color=COLORS["odd"],
+        fontweight="bold",
+        arrowprops=arrow,
+    )
+
+    # Output zero crossings: the two halves of the cycle pass through the
+    # steep centre at different inputs; the gap between them is the hysteresis.
+    cross = np.where(np.diff(np.sign(y)) != 0)[0]
+    rising = cross[np.diff(y)[cross] > 0]
+    falling = cross[np.diff(y)[cross] < 0]
+    if len(rising) and len(falling):
+        x_a, x_b = sorted([float(np.median(x[rising])), float(np.median(x[falling]))])
+        plt.annotate(
+            "High-gain region\n(steep slope near zero)",
+            xy=(x_a, 0),
+            xytext=(-0.95, 0.15),
+            arrowprops=arrow,
+        )
+        plt.annotate(
+            "",
+            xy=(x_a, -0.05),
+            xytext=(x_b, -0.05),
+            arrowprops={"arrowstyle": "<->", "color": "black", "lw": 1},
+        )
+        plt.text(
+            x_b + 0.05,
+            -0.12,
+            "Hysteresis gap\n(rising and falling\nhalves differ)",
+            va="top",
+        )
 
     if savepath:
-        save_pdf_svg(fig, savepath)
+        # dpi only affects the rasterized scatter layer; axes stay vector.
+        save_pdf_svg(fig, savepath, dpi=200)
     if show:
         plt.show()
 
 
 def plot_thd_fingerprint(
     sig: np.ndarray,
-    fs: float = 97812.0,
+    fs: float = config.FS_DEFAULT,
     savepath: str | None = None,
     show: bool = True,
 ) -> None:

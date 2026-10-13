@@ -15,9 +15,10 @@ In **Phase 2**, the system was expanded to include a host-side **Function Genera
 | Parameter | Performance |
 | :--- | :--- |
 | **ADC Depth** | 12-bit (Hardware) $\to$ 16-bit (Scaled) |
-| **Sample Rate ($F_s$)** | **97.8 kHz** (Calibrated via 60Hz Mains Reference) |
-| **Bandwidth** | DC -- 48.9 kHz (Nyquist) |
-| **Buffer** | 16,384 Samples ($\approx 167$ms burst) |
+| **Sample Rate ($F_s$)** | **97.69 kHz** ±0.01% (verified against crystal-referenced test tones) |
+| **Bandwidth** | DC -- 48.8 kHz (Nyquist) |
+| **Buffer** | 16,384 Samples ($\approx 168$ms burst) |
+| **Noise Floor** | 1.29 mV RMS; 59.1 dB full-scale dynamic range (9.5 effective bits) |
 | **Input Range** | 0--3.3V (Unipolar) / $\pm 3.3V$ (AC Coupled) |
 
 ## 📂 Repository Architecture
@@ -82,8 +83,8 @@ The scientific workbench.
   - *Set A:* Linearity (Triangle Wave).
   - *Set B:* Bandwidth (Log Sine Sweep).
   - *Set C:* Standard THD (1kHz Sine).
-- **`04_transfer_analysis.ipynb`**: System Identification (In Progress).
-  - *Bode Response:* Magnitude and Phase analysis.
+- **`04_transfer_analysis.ipynb`**: System Identification.
+  - *Bode Response:* Magnitude response and harmonics vs. frequency (chunked sweep fitting).
   - *Transfer Curves:* Input vs. Output linearity mapping.
   - *THD Fingerprinting:* Harmonic distortion profiling.
 
@@ -147,8 +148,8 @@ python oscilloscope-rp2040/scripts/capture/master_transfer.py sweep --duration 5
 
 ## Future Development
 
-This documentation describes the **v1.0 Prototype** architecture.
+This documentation describes the **v0 Prototype** architecture.
 
-Development has begun on **v2.0 ("The Silicon Revision")**, which will transition this logic from a perfboard prototype to an integrated PCBA with dedicated ADCs and DACs.
+Development has begun on **v1.0 ("The Silicon Revision")**, the first product iteration, which will transition this logic from a perfboard prototype to an integrated PCBA with dedicated ADCs and DACs.
 
-**View the full [v2.0 Roadmap and Specification](../README.md#-future-roadmap-silicon-revision-v20) in the project root.**
+**View the full [v1.0 Roadmap and Specification](../README.md#-future-roadmap-silicon-revision-v10) in the project root.**

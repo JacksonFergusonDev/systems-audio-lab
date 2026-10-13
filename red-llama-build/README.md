@@ -51,7 +51,7 @@ In a 9V circuit, this drop is non-trivial:
 $$V_{rail} = V_{source} - V_{diode} = 9.0\text{V} - 0.7\text{V} = 8.3\text{V}$$
 
 **The Modification:**
-I replaced the 1N4001 with a **1N5817 Schottky Diode**. Schottky diodes utilize a metal-semiconductor junction rather than a p-n junction, resulting in a significantly lower $V_f$ (typically $0.2\text{V}$ to $0.3\text{V}$).
+I replaced the 1N4001 with a **1N5817 Schottky Diode**. Schottky diodes utilize a metal-semiconductor junction rather than a p-n junction, resulting in a significantly lower $V_f$: $\approx 0.3\text{V}$ at the few milliamps the pedal draws ($0.45\text{V}$ at the diode's rated $1\text{A}$).
 
 $$V_{rail(mod)} = 9.0\text{V} - 0.3\text{V} = 8.7\text{V}$$
 

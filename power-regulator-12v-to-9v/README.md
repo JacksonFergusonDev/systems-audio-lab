@@ -27,9 +27,9 @@ $$P_{dissipated} = (V_{in} - V_{out}) \times I_{load}$$
 
 Given my input is $12V$ and output is $9V$, the regulator drops $3V$.
 
-- **For the Red Llama:** The current draw is negligible ($<10mA$). $P \approx 0.03W$. The regulator would run cool even without a heatsink.
+- **For the Red Llama:** The current draw was not measured, but CMOS pedals of this kind typically draw well under $10mA$, giving $P < 0.03W$. The regulator would run cool even without a heatsink.
 
-- **Future Proofing (Digital Pedals):** Digital reverbs or delays can draw upwards of $400mA$.
+- **Future Proofing (Digital Pedals):** Digital reverbs or delays draw far more; I used a $400mA$ load as the design case.
 
     $$P_{max} \approx 3V \times 0.4A = 1.2W$$
 
@@ -52,7 +52,7 @@ Adding ambient temp ($25^\circ C$), the silicon would hit $\approx 103^\circ C$.
 | **L7809CV** | 9V Linear Regulator | The standard for fixed voltage regulation. Robust thermal shutdown and current limiting features built-in. |
 | **Input Caps** | 100µF Electrolytic + 100nF Poly | The 100µF acts as a bulk reservoir to smooth out low-frequency ripple from the 12V brick. The 100nF handles high-frequency noise that the electrolytic's ESR might miss. |
 | **Output Caps** | 10µF Electrolytic + 100nF Poly | Provides transient response for the load. The 100nF prevents the regulator from oscillating. |
-| **1N5817** | Schottky Diode | **Reverse Polarity Protection.** If I accidentally plug in a Center-Positive adapter, this blocks the current. I chose a Schottky (vs. 1N4001) for its lower forward voltage drop ($V_f \approx 0.45V$), keeping the input voltage higher. |
+| **1N5817** | Schottky Diode | **Reverse Polarity Protection.** If I accidentally plug in a Center-Positive adapter, this blocks the current. I chose a Schottky (vs. 1N4001) for its lower forward voltage drop ($V_f \approx 0.45V$ at its rated 1A, $\approx 0.3V$ at a pedal's few mA), keeping the input voltage higher. |
 | **Heatsink** | 10-Fin TO-220 | Selected to allow the supply to drive high-current digital pedals in the future without thermal throttling. |
 
 ## 4. Bill of Materials
