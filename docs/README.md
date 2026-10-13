@@ -45,7 +45,7 @@ The final analysis (detailed in **Chapter 6** of the report) successfully valida
 ### D. Transfer Function (Phase II)
 
 - **Method:** The Red Llama was driven by a 20Hz-20kHz log sine sweep from the host DAC (`scripts/signal/play_sweep.py`). Because stream-mode captures have gaps between 1024-sample blocks, the response was recovered by per-block harmonic fitting (`sysaudio.chunked_sweep`) rather than ESS deconvolution.
-- **Result:** At max gain the response is flat within 0.5dB from 100Hz to 3.4kHz, rolling off to -2.9dB at 19kHz. Distortion is heavy and frequency-independent (H2 ≈ H3 ≈ -13dBc), over 30dB above the measurement chain's floor, and cross-validated against a burst capture within 0.7dB.
+- **Result:** At max gain the response is flat within 0.5dB from 97Hz to 3.4kHz, rolling off to -2.8dB at 19.2kHz. Distortion is heavy and frequency-independent (H2 ≈ H3 ≈ -13dBc), over 30dB above the measurement chain's floor, and cross-validated against a burst capture within 0.2dB. Across H2-H8 the even harmonics carry 1.34× the energy of the odd ones for a pure 1kHz tone, confirming asymmetric clipping.
 
 ![Transfer Function](./figures/fig_transfer_bode.svg)
 

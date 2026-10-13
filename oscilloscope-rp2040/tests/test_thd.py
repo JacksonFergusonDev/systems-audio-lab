@@ -17,12 +17,25 @@ def _tone(f0: float) -> np.ndarray:
 
 @pytest.mark.parametrize("f_actual", [1000.0, 1003.0, 997.2])
 def test_thd_tolerates_off_nominal_fundamental(f_actual: float) -> None:
-    """Real tones drift from nominal (e.g. 1003 Hz); THD must not collapse."""
+    """THD must not depend on where the tone falls relative to FFT bins."""
     thd = dsp.calculate_selective_thd(_tone(f_actual), FS, fundamental_freq=1000.0)
     assert thd == pytest.approx(EXPECTED_PCT, rel=0.03)
 
 
 def test_thd_low_fundamental_off_nominal() -> None:
-    """A slightly sharp low E (83.6 Hz vs 82.4 Hz nominal) at ~6 bins/cycle."""
+    """A low fundamental, off nominal, spanning only ~14 FFT bins."""
     thd = dsp.calculate_selective_thd(_tone(83.6), FS, fundamental_freq=82.4)
     assert thd == pytest.approx(EXPECTED_PCT, rel=0.05)
+
+
+def test_harmonic_amplitudes_recovers_each_harmonic() -> None:
+    f1, amps = dsp.harmonic_amplitudes(_tone(1003.0), FS, 1000.0, n_harmonics=8)
+
+    assert f1 == pytest.approx(1003.0, abs=0.5)
+    expected = np.array([AMPS.get(h, 0.0) for h in range(1, 9)])
+    np.testing.assert_allclose(amps, expected, atol=0.01)
+
+
+def test_even_odd_energy_ratio() -> None:
+    amps = np.array([1.0, 0.3, 0.1, 0.4, 0.0])
+    assert dsp.even_odd_energy_ratio(amps) == pytest.approx(5.0)

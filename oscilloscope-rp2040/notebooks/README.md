@@ -64,5 +64,6 @@ The System Identification workbench: frequency response, distortion vs. frequenc
 1. **Transfer Curve:**
     - XY plot of a 100 Hz triangle reveals the asymmetric soft-saturation sigmoid and its capacitive "memory" loop.
 1. **Cross-Validation:**
-    - A gap-free 1 kHz burst capture agrees with the sweep analysis within 0.7 dB.
+    - A gap-free 1 kHz burst capture agrees with the sweep analysis within 0.2 dB.
+    - Quantifies even vs. odd harmonic energy (H2–H8) for the 1 kHz tone, complementing the guitar comparison in notebook `02`.
     - Exports `fig_transfer_bode`, `fig_transfer_curve` and `fig_thd_fingerprint` to `docs/figures/`.

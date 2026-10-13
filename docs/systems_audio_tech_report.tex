@@ -690,12 +690,12 @@ Although the capture as a whole is discontinuous, each block is gap-free, and a 
 Blocks holding less than one cycle ($f < f_s/1024 \approx 95$\,Hz) are excluded. The method was verified against synthetic stream captures with random gaps and timing jitter, recovering a known first-order low-pass response within $0.5$\,dB and the analytic harmonics of a polynomial nonlinearity within $1$\,dB. The implementation is \texttt{sysaudio.chunked\_sweep} (Appendix \ref{app:chunked}).
 
 \subsection{Frequency Response}
-The DUT is flat within $0.5$\,dB from $100$\,Hz to $3.4$\,kHz, then rolls off gently: $-1$\,dB at $5.8$\,kHz, $-2$\,dB at $11.9$\,kHz and $-2.9$\,dB at $19$\,kHz (Figure \ref{fig:transfer_bode}, top). The shallow slope is consistent with a single-pole low-pass formed by the inverters' feedback network, with its corner near the top of the audio band.
+The DUT is flat within $0.5$\,dB from $97$\,Hz to $3.4$\,kHz, then rolls off gently: $-1$\,dB at $5.8$\,kHz, $-2$\,dB at $11.9$\,kHz and $-2.8$\,dB at $19.2$\,kHz (Figure \ref{fig:transfer_bode}, top). The shallow slope is consistent with a single-pole low-pass formed by the inverters' feedback network, with its corner near the top of the audio band.
 
 This measurement was made at maximum gain, where the circuit is heavily saturated. A saturated stage's output level is set largely by its clipping ceiling rather than by its input, which tends to flatten the apparent response. The small-signal response, including the low-frequency corner of the coupling capacitors (below the $\approx 95$\,Hz analysis floor), remains to be measured at low gain.
 
 \subsection{Harmonic Distortion vs. Frequency}
-The harmonic profile is essentially independent of frequency up to $\approx 5$\,kHz (Figure \ref{fig:transfer_bode}, bottom): $H_2 \approx H_3 \approx -13$\,dBc ($\approx 22\%$), $H_4 \approx -15$\,dBc and $H_5 \approx -24$\,dBc. Above $5$\,kHz the harmonics themselves fall into the treble roll-off, and $H_2$ drops to $-18$\,dBc at $19$\,kHz. The source loopback's harmonics sit at $\approx -47$\,dBc throughout, more than $30$\,dB below the DUT's, confirming that the measured distortion is produced by the Red Llama and not by the measurement chain.
+The harmonic profile is essentially independent of frequency up to $\approx 5$\,kHz (Figure \ref{fig:transfer_bode}, bottom): median levels over 200\,Hz--5\,kHz are $H_2 = -12.9$, $H_3 = -12.8$, $H_4 = -15.3$ and $H_5 = -23.7$\,dBc. $H_2$ and $H_3$ are equal, but $H_4$ sits $8$\,dB above $H_5$, an early sign that the series is not symmetric (Section \ref{sec:evenodd}). Above $5$\,kHz the harmonics themselves fall into the treble roll-off, and $H_2$ drops to $-18.3$\,dBc at $19.2$\,kHz. The source loopback's harmonics sit at $\approx -47$\,dBc throughout, more than $30$\,dB below the DUT's, confirming that the measured distortion is produced by the Red Llama and not by the measurement chain.
 
 \begin{figure}[htbp]
   \centering
@@ -708,7 +708,7 @@ The harmonic profile is essentially independent of frequency up to $\approx 5$\,
 Plotting output against input for a $100$\,Hz triangle (Figure \ref{fig:transfer_curve}) traces the saturation curve directly. Its shape refines the earlier findings in three ways:
 \begin{itemize}
   \item \textbf{Soft Saturation:} Gain is steep around zero and decreases smoothly toward the rails, with no sharp clipping threshold.
-  \item \textbf{Asymmetry:} The output peaks at $+1.06$\,V but only $-0.90$\,V (ratio $1.17$; $1.35$ for the 1\,kHz sine). Unequal clipping of the two half-cycles is the physical origin of the even harmonics.
+  \item \textbf{Asymmetry:} The output peaks at $+1.05$\,V but only $-0.90$\,V (ratio $1.17$; $1.35$ for the 1\,kHz sine). Unequal clipping of the two half-cycles is the physical origin of the even harmonics.
   \item \textbf{Memory:} The rising and falling halves trace different paths, forming a loop rather than a single curve. The coupling capacitors add phase shift at $100$\,Hz, visible as ``droop'' on the flat tops. Part of the loop may be residual misalignment, since source and DUT were captured separately.
 \end{itemize}
 
@@ -720,7 +720,7 @@ Plotting output against input for a $100$\,Hz triangle (Figure \ref{fig:transfer
 \end{figure}
 
 \subsection{Cross-Validation Against Burst Capture}
-A 1\,kHz sine captured in burst mode is gap-free and independent of the sweep analysis. Its harmonic spectrum agrees with the chunked sweep at 1\,kHz to within $0.7$\,dB (Table \ref{tab:crosscheck}, Figure \ref{fig:thd}), validating the method on real data.
+A 1\,kHz sine captured in burst mode is gap-free and independent of the sweep analysis. Its harmonic spectrum agrees with the chunked sweep at 1\,kHz to within $0.2$\,dB (Table \ref{tab:crosscheck}, Figure \ref{fig:thd}), validating the method on real data.
 
 \begin{table}[htbp]
   \centering
@@ -734,10 +734,10 @@ A 1\,kHz sine captured in burst mode is gap-free and independent of the sweep an
     \textbf{\textcolor{white}{Burst Sine (dBc)}} &
     \textbf{\textcolor{white}{Chunked Sweep (dBc)}} \\
     \midrule
-    $H_2$ & $-13.5$ & $-12.9$ \\
-    $H_3$ & $-12.6$ & $-12.8$ \\
-    $H_4$ & $-14.9$ & $-15.2$ \\
-    $H_5$ & $-23.9$ & $-23.5$ \\
+    $H_2$ & $-12.9$ & $-12.9$ \\
+    $H_3$ & $-12.8$ & $-12.8$ \\
+    $H_4$ & $-15.2$ & $-15.2$ \\
+    $H_5$ & $-23.7$ & $-23.5$ \\
     \bottomrule
   \end{tabular}
   \caption{Harmonic levels at 1\,kHz from two independent capture modes.}
@@ -747,12 +747,37 @@ A 1\,kHz sine captured in burst mode is gap-free and independent of the sweep an
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/fig_thd_fingerprint.pdf}
-  \caption{\textbf{Steady-State Harmonic Fingerprint at 1\,kHz.} Burst-mode capture of the DUT driven by a 1\,kHz sine. Even and odd harmonics appear at comparable levels.}
+  \caption{\textbf{Steady-State Harmonic Fingerprint at 1\,kHz.} Burst-mode capture of the DUT driven by a 1\,kHz sine. $H_2$ and $H_3$ are equal, while the higher even harmonics ($4f$, $6f$, $8f$) outlast the odd ones ($5f$, $7f$).}
   \label{fig:thd}
 \end{figure}
 
-\subsection{Reconciling the Harmonic Fingerprints}
-With a guitar note (Section \ref{sec:topology}), the 2nd harmonic dominated the spectrum; with a pure tone, even and odd harmonics are comparable. Both are consistent with an asymmetric soft clipper: asymmetry is what makes even harmonics appear at all, while their level relative to the odd series depends on the stimulus and drive level. The sine data thus supports the ``asymmetric soft clipping'' conclusion, but tempers the stronger claim of even-order \emph{dominance} to the guitar-driven case.
+\subsection{Even vs. Odd Harmonic Balance}
+\label{sec:evenodd}
+Comparing $H_2$ with $H_3$ alone hides the shape of the full series. Table \ref{tab:evenodd} gives the ratio of even-order ($H_2, H_4, \dots$) to odd-order ($H_3, H_5, \dots$) harmonic energy over $H_2$--$H_8$, computed in Notebooks \texttt{02} and \texttt{04} with a common method (measured fundamental, main-lobe energy, local noise floor removed).
+
+\begin{table}[htbp]
+  \centering
+  \small\sffamily
+  \renewcommand{\arraystretch}{1.3}
+  \rowcolors{2}{TableRow}{white}
+  \begin{tabular}{@{} l r r @{}}
+    \toprule
+    \rowcolor{TableHeader}
+    \textbf{\textcolor{white}{Stimulus}} &
+    \textbf{\textcolor{white}{Clean Input}} &
+    \textbf{\textcolor{white}{Red Llama Output}} \\
+    \midrule
+    1\,kHz sine     & -- (all harmonics $<0.01$) & $1.34$ \\
+    Guitar low E    & $1.05$ & $1.88$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Even/odd harmonic energy ratio ($H_2$--$H_8$). Values above 1 mean the even series dominates.}
+  \label{tab:evenodd}
+\end{table}
+
+With the pure tone, $H_2$ and $H_3$ are equal ($0.226$ vs.\ $0.230$ of the fundamental), but the higher orders split: $H_4$, $H_6$ and $H_8$ ($0.173$, $0.122$, $0.083$) outlast $H_5$ and $H_7$ ($0.065$, $0.003$). Starting from a clean source, the circuit therefore produces an even-dominant series. With the guitar, whose clean note is already harmonically rich but balanced, the circuit raises $H_2$ from $1.47$ to $2.21$ and lowers $H_3$ from $1.73$ to $1.31$.
+
+Both stimuli thus confirm the even-order dominance reported in Section \ref{sec:topology}, the signature of asymmetric clipping. The effect is stronger with the guitar, whose input harmonics intermodulate in the nonlinearity and whose clean and Red Llama captures are separate, unmatched plucks.
 
 \subsection{Limitations}
 \begin{itemize}
@@ -779,10 +804,10 @@ The analytical phase (Chapter 6) provided quantitative validation of the system'
     The transfer characteristic analysis confirmed that the CD4049 CMOS Hex Inverter, when biased into the linear region, exhibits a continuous hyperbolic tangent ($\tanh$) saturation curve.\cite{ti_cd4049ub_datasheet} The absence of derivative discontinuities at the saturation threshold (the "Soft Knee") mathematically distinguishes this circuit from standard silicon diode clipping.
 
   \item \textbf{Harmonic Fingerprint:}
-    Spectral decomposition revealed a dominant 2nd-order harmonic ($f = 2f_0$) and a decaying series of even-order harmonics. This confirms that the CMOS inverter mimics the asymmetrical transfer function of single-ended Class A vacuum tube triodes, validating the psychoacoustic description of the device as "warm" or "amp-like."\cite{sonarworks_distortion_even_odd} With a pure-tone stimulus, even and odd harmonics appear at comparable levels; the asymmetry is confirmed, while the degree of even-order dominance depends on the stimulus.
+    Spectral decomposition revealed a dominant 2nd-order harmonic ($f = 2f_0$) and a decaying series of even-order harmonics. This confirms that the CMOS inverter mimics the asymmetrical transfer function of single-ended Class A vacuum tube triodes, validating the psychoacoustic description of the device as "warm" or "amp-like."\cite{sonarworks_distortion_even_odd} A pure-tone stimulus confirms the even-order dominance: from a clean 1\,kHz source the circuit produces $1.34\times$ more even- than odd-harmonic energy ($1.88\times$ with the guitar, versus $1.05$ for the clean note).
 
   \item \textbf{Swept Transfer Function:}
-    At maximum gain the DUT is flat within $0.5$\,dB from $100$\,Hz to $3.4$\,kHz, rolling off gently to $-2.9$\,dB at $19$\,kHz. Its distortion is heavy and frequency-independent ($H_2 \approx H_3 \approx -13$\,dBc), more than $30$\,dB above the measurement chain's floor, and the large-signal transfer curve is an asymmetric sigmoid with capacitive memory.
+    At maximum gain the DUT is flat within $0.5$\,dB from $97$\,Hz to $3.4$\,kHz, rolling off gently to $-2.8$\,dB at $19.2$\,kHz. Its distortion is heavy and frequency-independent ($H_2 \approx H_3 \approx -13$\,dBc), more than $30$\,dB above the measurement chain's floor, and the large-signal transfer curve is an asymmetric sigmoid with capacitive memory.
 
   \item \textbf{Instrumentation Efficacy:}
     The custom RP2040 Data Acquisition System met or exceeded all design requirements.

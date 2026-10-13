@@ -132,31 +132,19 @@ def extract_harmonics_list(
         DataFrame with columns [Harmonic, Order, Magnitude, Type], or None if
         fundamental is missing.
     """
-    freqs, mags = dsp.compute_spectrum(signal, fs)
-    window = 10
-
-    fund_mask = (freqs > fundamental_freq - window) & (
-        freqs < fundamental_freq + window
-    )
-    if not np.any(fund_mask):
+    f1, amps = dsp.harmonic_amplitudes(signal, fs, fundamental_freq, n_harmonics)
+    if f1 == 0.0:
         return None
 
-    fund_mag = np.max(mags[fund_mask])
-    data = []
-
-    for i in range(1, n_harmonics + 1):
-        target_f = fundamental_freq * i
-        mask = (freqs > target_f - window) & (freqs < target_f + window)
-        mag = np.max(mags[mask]) if np.any(mask) else 0.0
-
-        data.append(
-            {
-                "Harmonic": f"{i}f",
-                "Order": int(i),
-                "Magnitude": float(mag / fund_mag),
-                "Type": "Even" if i % 2 == 0 else "Odd",
-            }
-        )
+    data = [
+        {
+            "Harmonic": f"{i}f",
+            "Order": int(i),
+            "Magnitude": float(amps[i - 1]),
+            "Type": "Even" if i % 2 == 0 else "Odd",
+        }
+        for i in range(1, n_harmonics + 1)
+    ]
 
     return pd.DataFrame(data)
 
