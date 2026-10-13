@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.signal as spsig
+from scipy.optimize import minimize_scalar
 
 from . import config
 
@@ -219,6 +220,71 @@ def harmonic_amplitudes(
         return empty
 
     return f1, np.sqrt(powers / powers[0])
+
+
+def estimate_tone_frequency(
+    signal_arr: np.ndarray,
+    fs: float,
+    fundamental_freq: float,
+    n_harmonics: int = 1,
+) -> tuple[float, float]:
+    """
+    Estimate a steady tone's frequency to well below one FFT bin.
+
+    Starts from the interpolated FFT peak, then minimises the residual of a
+    least-squares fit of the fundamental plus `n_harmonics - 1` harmonics over
+    a +/-1 bin window. For a stable, pure tone this resolves frequency far
+    more finely than the bin width, limited by noise rather than by N.
+
+    Parameters
+    ----------
+    signal_arr : np.ndarray
+        Time-domain signal array.
+    fs : float
+        Sampling rate in Hz (assumed).
+    fundamental_freq : float
+        Nominal tone frequency in Hz; the peak within +/-10% is used.
+    n_harmonics : int, optional
+        Harmonics included in the fit model (use > 1 for distorted tones).
+
+    Returns
+    -------
+    Tuple[float, float]
+        (frequency_hz, std_hz) where std_hz is the Cramer-Rao bound implied
+        by the fitted amplitude and residual noise.
+    """
+    x = np.asarray(signal_arr, dtype=np.float64)
+    x = x - np.mean(x)
+    n = x.size
+    t = np.arange(n) / fs
+
+    def fit(f: float) -> tuple[float, float]:
+        cols = [np.ones(n)]
+        for h in range(1, n_harmonics + 1):
+            cols += [np.cos(2 * np.pi * h * f * t), np.sin(2 * np.pi * h * f * t)]
+        basis = np.stack(cols, axis=1)
+        coeffs, *_ = np.linalg.lstsq(basis, x, rcond=None)
+        resid = x - basis @ coeffs
+        return float(np.sum(resid**2)), float(np.hypot(coeffs[1], coeffs[2]))
+
+    f0, _ = harmonic_amplitudes(x, fs, fundamental_freq, n_harmonics=1)
+    if f0 == 0.0:
+        return 0.0, float("inf")
+    bin_hz = fs / n
+    result = minimize_scalar(
+        lambda f: fit(f)[0],
+        bounds=(f0 - bin_hz, f0 + bin_hz),
+        method="bounded",
+        options={"xatol": 1e-6},
+    )
+    f_hat = float(result.x)
+
+    ssr, amp = fit(f_hat)
+    noise_var = ssr / n
+    snr = (amp**2 / 2) / noise_var if noise_var > 0 else np.inf
+    duration = n / fs
+    std = float(np.sqrt(6 / (n * snr)) / (np.pi * duration))
+    return f_hat, std
 
 
 def even_odd_energy_ratio(amplitudes: np.ndarray) -> float:

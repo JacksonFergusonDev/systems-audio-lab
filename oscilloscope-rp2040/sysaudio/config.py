@@ -19,7 +19,10 @@ V_REF: float = 3.3
 V_MID: float = 1.65  # Virtual ground / Bias voltage
 
 # Acquisition Settings
-FS_DEFAULT: float = 97793.1  # Hz
+# Measured against crystal-referenced sound-card tones (1 kHz sine, 100 Hz
+# triangle), +/-0.01%; derived in Notebook 02, Section 5. Per-file `fs` values
+# record what was assumed at capture time (97793.1 / 97859.6 Hz).
+FS_DEFAULT: float = 97685.1  # Hz
 BURST_SAMPLES: int = 16384
 LIVE_SAMPLES: int = 1024  # For streaming/scope views
 

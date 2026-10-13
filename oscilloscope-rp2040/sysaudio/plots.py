@@ -409,7 +409,7 @@ def plot_transfer_curve(
 
 def plot_thd_fingerprint(
     sig: np.ndarray,
-    fs: float = 97812.0,
+    fs: float = config.FS_DEFAULT,
     savepath: str | None = None,
     show: bool = True,
 ) -> None:

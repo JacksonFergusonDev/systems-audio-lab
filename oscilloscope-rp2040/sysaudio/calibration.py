@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import windows
 
-from . import config, daq, dsp
+from . import audio, config, daq, dsp
 
 
-def save_calibration(fs: float) -> None:
+def save_calibration(fs: float, method: str = "mains_60hz") -> None:
     """
     Save the calibrated sampling rate to the calibration JSON file.
 
@@ -20,6 +20,8 @@ def save_calibration(fs: float) -> None:
     ----------
     fs : float
         The calculated true sampling rate in Hz.
+    method : str, optional
+        How `fs` was derived (e.g. "mains_60hz", "reference_tone_1000hz").
     """
     # 1. Create data directory if it doesn't exist yet
     os.makedirs(os.path.dirname(config.CALIBRATION_FILE_PATH), exist_ok=True)
@@ -29,6 +31,7 @@ def save_calibration(fs: float) -> None:
         "timestamp": time.time(),
         "date_str": time.strftime("%Y-%m-%d %H:%M:%S"),
         "hardware_default": config.FS_DEFAULT,
+        "method": method,
     }
 
     with open(config.CALIBRATION_FILE_PATH, "w") as f:
@@ -67,6 +70,10 @@ def load_calibration() -> float | None:
 def calibrate_fs_robust(visualize: bool = True) -> float:
     """
     Calculate the true sampling rate by analyzing 60Hz mains hum.
+
+    Mains hum is a weak reference: the grid wanders by a few hundredths of a
+    hertz and a 16k-sample burst holds only ~10 cycles at low SNR. Prefer
+    `calibrate_fs_with_tone` when a sound card is available.
 
     This function captures a burst of data, identifying the mains frequency
     assuming the user is touching the input jack. It uses a weighted average
@@ -112,12 +119,15 @@ def calibrate_fs_robust(visualize: bool = True) -> float:
         noise_mask[max(0, peak_idx - 5) : min(len(fft_mag), peak_idx + 5)] = False
         noise_floor = np.mean(fft_mag[noise_mask])
 
-        snr = peak_mag / noise_floor if noise_floor > 0 else 0
+        # Peak bin vs. mean of all other bins. This includes the FFT's
+        # processing gain (~39 dB for 16k points), so it is NOT a time-domain
+        # SNR; it only checks that a clear 60 Hz line is present.
+        peak_ratio = peak_mag / noise_floor if noise_floor > 0 else 0
 
         print("\n--- DIAGNOSTICS ---")
-        print(f"Signal Strength (SNR): {snr:.1f}x noise floor")
+        print(f"Spectral peak-to-floor ratio: {peak_ratio:.1f}x (not SNR)")
 
-        if snr < 10:
+        if peak_ratio < 10:
             print("❌ WARNING: Signal too weak! Touch the jack firmly.")
             return float(config.FS_DEFAULT)
 
@@ -147,3 +157,74 @@ def calibrate_fs_robust(visualize: bool = True) -> float:
     except Exception as e:
         print(f"❌ Calibration Failed: {e}")
         return float(config.FS_DEFAULT)
+
+
+def fs_from_reference_tone(
+    signal_arr: np.ndarray,
+    fs_assumed: float,
+    f_ref: float,
+    n_harmonics: int = 1,
+) -> tuple[float, float]:
+    """
+    Derive the true sampling rate from a capture of a known reference tone.
+
+    If a tone of true frequency `f_ref` measures `f_meas` under an assumed
+    rate, the true rate is ``fs_assumed * f_ref / f_meas``. A sound card's
+    crystal clock (typically +/-50 ppm) makes its tones a far better reference
+    than mains hum.
+
+    Parameters
+    ----------
+    signal_arr : np.ndarray
+        Burst capture of the reference tone.
+    fs_assumed : float
+        Sampling rate that was assumed when the capture was made.
+    f_ref : float
+        True frequency of the reference tone in Hz.
+    n_harmonics : int, optional
+        Harmonics included in the frequency fit (use > 1 for non-sine tones).
+
+    Returns
+    -------
+    Tuple[float, float]
+        (fs_true, std) in Hz, where std propagates the frequency fit's bound.
+    """
+    f_meas, f_std = dsp.estimate_tone_frequency(
+        signal_arr, fs_assumed, f_ref, n_harmonics
+    )
+    fs_true = fs_assumed * f_ref / f_meas
+    return float(fs_true), float(fs_true * f_std / f_meas)
+
+
+def calibrate_fs_with_tone(
+    f_ref: float = 1000.0, amp: float = 0.5, settle_s: float = 0.5
+) -> float:
+    """
+    Calibrate the sampling rate by capturing a sound-card reference tone.
+
+    Plays a sine of `f_ref` through the host audio output (loop it back into
+    the DAQ input), captures a burst, and saves the derived rate.
+
+    Parameters
+    ----------
+    f_ref : float, optional
+        Reference tone frequency in Hz.
+    amp : float, optional
+        Digital amplitude of the tone (0.0 to 1.0).
+    settle_s : float, optional
+        Seconds to let playback settle before capturing.
+
+    Returns
+    -------
+    float
+        The calibrated sampling rate in Hz.
+    """
+    with audio.ContinuousOscillator("sine", f_ref, amp):
+        time.sleep(settle_s)
+        with daq.DAQInterface() as device:
+            volts = dsp.raw_to_volts(device.capture_burst())
+
+    fs_true, fs_std = fs_from_reference_tone(volts, config.FS_DEFAULT, f_ref)
+    print(f"Calibrated FS: {fs_true:.1f} +/- {fs_std:.1f} Hz (ref {f_ref:.0f} Hz)")
+    save_calibration(fs_true, method=f"reference_tone_{f_ref:.0f}hz")
+    return fs_true
