@@ -147,6 +147,11 @@ def calculate_selective_thd(
     Sums ONLY the energy at specific harmonic frequencies, ignoring the
     broad-band noise floor.
 
+    The true fundamental is located near `fundamental_freq` (real tones drift
+    from nominal, e.g. a sharp string or an uncalibrated sound card), and each
+    harmonic's energy is summed over its whole Hann main lobe so the result
+    does not depend on where a tone falls between FFT bins.
+
     Parameters
     ----------
     signal_arr : np.ndarray
@@ -154,7 +159,8 @@ def calculate_selective_thd(
     fs : float
         Sampling rate in Hz.
     fundamental_freq : float, optional
-        The fundamental frequency of the signal (e.g., 82.4 for low E).
+        Nominal fundamental frequency (e.g., 82.4 for low E). The measured
+        peak within +/-10% of this value is used.
     n_harmonics : int, optional
         Number of harmonics to include in the calculation.
 
@@ -163,48 +169,55 @@ def calculate_selective_thd(
     float
         THD percentage (0.0 to 100.0+).
     """
-    # Use internal compute_spectrum function
     freqs, mags = compute_spectrum(signal_arr, fs)
+    df = freqs[1] - freqs[0]
+    power = mags**2
 
-    # 1. Get Fundamental Magnitude
-    window = 5  # Narrow window to exclude nearby noise
-    fund_mask = (freqs > fundamental_freq - window) & (
-        freqs < fundamental_freq + window
-    )
+    lobe = 2  # Hann main lobe half-width in bins
+    search = 3  # Bins either side of the predicted harmonic to search
+    noise_ring = (4, 10)  # Bins either side used to estimate the local floor
 
-    if not np.any(fund_mask):
+    def component_power(f_target: float) -> float:
+        """Noise-corrected energy of the peak nearest `f_target`."""
+        k0 = round(f_target / df)
+        lo, hi = max(k0 - search, 0), min(k0 + search + 1, len(power))
+        if lo >= hi:
+            return 0.0
+        k = lo + int(np.argmax(power[lo:hi]))
+
+        peak = power[max(k - lobe, 0) : k + lobe + 1]
+        ring = np.concatenate(
+            [
+                power[max(k - noise_ring[1], 0) : max(k - noise_ring[0] + 1, 0)],
+                power[k + noise_ring[0] : k + noise_ring[1] + 1],
+            ]
+        )
+        floor = float(np.mean(ring)) if ring.size else 0.0
+        return max(0.0, float(np.sum(peak)) - floor * peak.size)
+
+    # 1. Locate the measured fundamental, refined by parabolic interpolation
+    band = (freqs > 0.9 * fundamental_freq) & (freqs < 1.1 * fundamental_freq)
+    if not np.any(band):
+        return 0.0
+    k1 = int(np.flatnonzero(band)[np.argmax(mags[band])])
+    if 0 < k1 < len(mags) - 1:
+        a, b, c = np.log(mags[k1 - 1 : k1 + 2] + 1e-20)
+        k1_frac = k1 + 0.5 * (a - c) / (a - 2 * b + c)
+    else:
+        k1_frac = float(k1)
+    f1 = k1_frac * df
+
+    fund_power = component_power(f1)
+    if fund_power <= 0:
         return 0.0
 
-    fund_mag = np.max(mags[fund_mask])
-
-    # 2. Sum ONLY the Harmonic Peaks (Selective)
-    harmonic_sum_sq = 0.0
-
-    for i in range(2, n_harmonics + 1):
-        target_f = fundamental_freq * i
-
-        # Look for a peak at exactly this frequency
-        mask = (freqs > target_f - window) & (freqs < target_f + window)
-
-        if np.any(mask):
-            # We subtract the estimated noise floor from the peak to be extra safe
-            # Estimate local noise by looking just outside the window
-            noise_mask = (
-                (freqs > target_f - window * 3)
-                & (freqs < target_f + window * 3)
-                & (~mask)
-            )
-            local_noise = np.mean(mags[noise_mask]) if np.any(noise_mask) else 0
-
-            # Get peak and subtract noise (soft floor at 0)
-            h_mag = max(0.0, np.max(mags[mask]) - local_noise)
-
-            if h_mag > 0:
-                harmonic_sum_sq += h_mag**2
+    # 2. Sum ONLY the harmonic peaks (selective)
+    harmonic_power = sum(
+        component_power(h * f1) for h in range(2, n_harmonics + 1) if h * f1 < freqs[-1]
+    )
 
     # 3. Calculate Selective THD
-    thd_pct = (np.sqrt(harmonic_sum_sq) / fund_mag) * 100
-    return float(thd_pct)
+    return float(100 * np.sqrt(harmonic_power / fund_power))
 
 
 def smart_align(sig_ref: np.ndarray, sig_target: np.ndarray) -> np.ndarray:
