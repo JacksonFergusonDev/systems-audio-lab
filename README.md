@@ -19,7 +19,7 @@
 
 Most audio analysis relies on "black box" equipment. This project builds the **entire signal chain** from scratch:
 
-1. **Power:** A custom linear regulator to eliminate switching noise.
+1. **Power:** A custom linear regulator to keep switching noise off the pedal's supply.
 1. **Device:** A discrete CMOS overdrive circuit to generate soft-clipping distortion.
 1. **Probe:** A custom RP2040 oscilloscope to capture the waveform.
 1. **Analysis:** A Python pipeline to measure the Transfer Function and harmonic distortion.
@@ -44,7 +44,7 @@ Using the custom RP2040 oscilloscope, I captured the saturation behavior of the 
 ![Topology Analysis](docs/figures/fig_analysis_topology.svg)
 
 1. **Time Domain (Left):** Shows **"soft knee"** compression. Unlike diodes which clip sharply at $V_f$, the CMOS chips round off the waveform smoothly.
-1. **Frequency Domain (Right):** The spectrum reveals a dominant **2nd harmonic** (one octave above fundamental). This even-order harmonic content is consistent with the "tube sound" hypothesis, mathematically validating the circuit design.
+1. **Frequency Domain (Right):** The circuit shifts the guitar's harmonics towards **even orders** (2nd harmonic up, 3rd down; even/odd energy 1.05 → 1.88). With a pure 1 kHz tone the bias is modest: the 2nd and 3rd harmonics are equal, and the even series leads from the 4th harmonic up (even/odd 1.34). This is consistent with the asymmetric clipping behind the "tube sound" hypothesis, though the circuit does not produce a dominant 2nd harmonic.
 
 ---
 
@@ -61,7 +61,7 @@ This project consists of four interconnected subsystems, each enabling the next.
 ### 2. [Infrastructure: Linear Power Regulator](power-regulator-12v-to-9v/)
 
 - **The Problem:** Cheap wall adapters introduce switching noise (ripple) that pollutes sensitive measurements.
-- **The Solution:** A custom 12V → 9V linear voltage regulator with thermal management to support high-current loads.
+- **The Solution:** A custom 12V → 9V linear voltage regulator with thermal management to support high-current loads. Rejecting switching ripple is the design intent; the output ripple has not been measured.
 - **Key Components:** L7809CV regulator, Schottky diode for reverse polarity protection, heatsink with ventilation.
 
 ### 3. [The Device: Red Llama Overdrive](red-llama-build/)
