@@ -97,3 +97,4 @@ from sysaudio import daq, dsp, config
 with daq.DAQInterface() as device:
     data = device.capture_burst()
     volts = dsp.raw_to_volts(data)
+```

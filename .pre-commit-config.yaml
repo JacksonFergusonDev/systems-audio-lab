@@ -1,45 +1,95 @@
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+  - pre-push
+
+default_stages:
+  - pre-commit
+
+fail_fast: true
+
 repos:
   # Generic hooks (configured to IGNORE Python)
   - repo: builtin
     hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1500]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
       - id: trailing-whitespace
-        exclude: \.(py|ipynb)$
+        exclude: '(\.(py|ipynb)$|^docs/figures/.*\.svg$)'
       - id: end-of-file-fixer
-        exclude: \.(py|ipynb)$
+        exclude: '(\.(py|ipynb)$|^docs/figures/.*\.svg$)'
       - id: check-yaml
         exclude: \.ipynb$
-      - id: check-added-large-files
-        exclude: \.ipynb$
-      - id: check-merge-conflict
       - id: check-toml
+      - id: check-json
 
   # Local Python Toolchain (Managed via uv.lock)
   - repo: local
     hooks:
+      - id: uv-lock-check
+        name: uv lock check
+        entry: uv lock --check
+        language: system
+        pass_filenames: false
+        files: ^(pyproject\.toml|uv\.lock)$
+
       - id: ruff-check
         name: ruff check
-        entry: uv run ruff check --fix
+        entry: uv run ruff check --fix --force-exclude
         language: system
-        types: [python]
-        pass_filenames: false
+        types_or: [python, pyi, jupyter]
+        require_serial: true
 
       - id: ruff-format
         name: ruff format
-        entry: uv run ruff format
+        entry: uv run ruff format --force-exclude
         language: system
-        types: [python]
-        pass_filenames: false
+        types_or: [python, pyi, jupyter]
+        require_serial: true
 
       - id: mypy
         name: mypy
-        entry: uv run mypy
+        entry: uv run mypy .
         language: system
-        types: [python]
-        pass_filenames: true
+        pass_filenames: false
+        files: \.(py|ipynb)$|^(pyproject\.toml|uv\.lock)$
 
-  # Markdown linting
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.23.2
+      - id: rumdl-check
+        name: rumdl check
+        entry: uv run rumdl check --fix
+        language: system
+        types: [markdown]
+        require_serial: true
+
+      - id: actionlint
+        name: actionlint
+        entry: uv run actionlint
+        language: system
+        types: [yaml]
+        files: ^\.github/workflows/.*\.ya?ml$
+
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        files: ^(oscilloscope-rp2040/|pyproject\.toml$|uv\.lock$)
+        stages: [pre-push]
+
+  # Check for accidental commits of secrets
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
     hooks:
-      - id: markdownlint-cli2
-        args: ["--fix"]
+      - id: gitleaks
+
+  # Commit message validation
+  - repo: https://github.com/Goldziher/gitfluff
+    rev: v0.8.0
+    hooks:
+      - id: gitfluff-lint
+        args: [--write]
+        stages: [commit-msg]
