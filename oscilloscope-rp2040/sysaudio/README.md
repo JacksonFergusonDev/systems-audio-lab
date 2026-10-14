@@ -1,30 +1,30 @@
 # Source Library Architecture (`sysaudio/`)
 
-This directory contains the core Python package that powers the RP2040 Data Acquisition System. It is architected as a modular library, separating hardware abstraction, signal processing, and data persistence into discrete, testable units.
+This directory contains `sysaudio`, the Python package behind the scripts and notebooks. Each module covers one job: talking to the device, signal processing, saving files, plotting, and so on.
 
 ## Module Index
 
 ### 1. Hardware Abstraction Layer (`daq.py`)
 
-The `DAQInterface` class manages the physical link to the RP2040 via USB Serial (UART).
+The `DAQInterface` class manages the USB serial connection to the RP2040.
 
-- **Protocol:** Implements the 'Store-and-Forward' handshake (`s` for Burst, `v` for Video).
-- **Buffer Management:** Handles raw binary ingestion from the serial buffer to avoid overflows.
-- **Generator Pattern:** The `stream_generator()` method yields non-blocking data chunks for real-time applications.
+- **Protocol:** Sends the one-byte commands (`s` for a 16,384-sample burst, `v` for a 1,024-sample video burst) and reads back the raw samples.
+- **`capture_burst()`**: Returns one full burst.
+- **`stream_generator()`**: Yields one 1,024-sample block at a time, for the live scope and stream recordings.
 
 ### 2. Digital Signal Processing (`dsp.py`)
 
-A stateless functional module for manipulating raw ADC data.
+Functions for processing ADC data. None of them keep state between calls.
 
-- **`raw_to_volts`**: Vectorized conversion of `uint16` (0–65535) to Float64 (0–3.3V).
-- **`software_trigger`**: Implements a rising-edge detection algorithm to stabilize periodic waveforms for visualization (mimics hardware oscilloscope triggers).
+- **`raw_to_volts`**: Converts raw `uint16` samples (0–65535) to volts (0–3.3V).
+- **`software_trigger`**: Finds a rising edge so repeating waveforms stay still on screen, like the trigger on a hardware oscilloscope.
 - **`compute_spectrum`**: Wraps `numpy.fft` with a Hann window to reduce spectral leakage, scaled by the window's coherent gain so magnitudes read as peak amplitudes.
 - **`harmonic_amplitudes` / `calculate_selective_thd`**: Measure each harmonic's main-lobe energy with the local noise floor removed.
 - **`estimate_tone_frequency`**: Least-squares frequency fit of a steady tone, resolving far below one FFT bin.
 
 ### 3. Calibration Engine (`calibration.py`)
 
-Derives the *true* sample rate ($F_s$), which MicroPython's loop timing sets rather than a hardware clock.
+Measures the true sample rate ($F_s$). It has to be measured because it is set by how long each pass of the MicroPython loop takes, not by a hardware clock.
 
 - **Reference tone (preferred):** `calibrate_fs_with_tone` / `fs_from_reference_tone` fit a crystal-referenced sound-card tone; the measured rate is `config.FS_DEFAULT`.
 - **Mains hum (legacy):** `calibrate_fs_robust` locates the 60 Hz line. The grid wanders and the coupled hum is weak, so it is only good to about 0.2%.
@@ -32,7 +32,7 @@ Derives the *true* sample rate ($F_s$), which MicroPython's loop timing sets rat
 
 ### 4. Diagnostics (`diagnostics.py`)
 
-Automated health checks for the analog front end.
+Checks that a capture is usable.
 
 - **Clipping Detection:** Flags samples nearing 0V or 3.3V.
 - **Bias Drift:** Monitors the DC mean to ensure $V_{mid}$ remains centered ($\approx 1.65V$).
@@ -42,43 +42,43 @@ Automated health checks for the analog front end.
 
 Handles data persistence and serialization.
 
-- **Format:** Uses NumPy's compressed archive format (`.npz`) to store the signal array and sampling rate metadata efficiently.
+- **Format:** Stores the signal and its metadata in NumPy's compressed archive format (`.npz`).
 - **Sample rate:** `load_signal` returns the measured `config.FS_DEFAULT`; the `fs` stored in each file is what was assumed at capture time (pass `use_stored_fs=True` to get it).
 - **Units:** Burst captures store volts, stream captures raw ADC counts; `dsp.to_volts` accepts either.
 - **Legacy metadata:** In the existing captures `clipped` means "failed the health check" (weak signals included) and `adc_bits` reads 16 for the 12-bit ADC. The files are kept as recorded; new captures store `clipped` and `healthy` separately.
-- **Legacy Support:** Robust loading logic handles schema changes from previous firmware versions.
+- **Older Files:** Loading also handles files saved with earlier metadata layouts.
 
 ### 6. Visualization Primitives (`viz.py`)
 
-Encapsulates `matplotlib` boilerplate for the oscilloscope interface.
+Matplotlib setup for the oscilloscope windows.
 
-- **`init_scope_plot`**: Pre-configures figure assets (lines, axes) to maximize frame rate.
-- **`run_live_scope`**: A reusable, blocking visualization loop that handles blitting, window management, and optional "Launch Callbacks" to synchronize audio playback with the GUI.
-- **Style:** Enforces a high-contrast dark theme for better readability during analysis.
+- **`init_scope_plot`**: Creates the figure, axes and lines once up front, so each frame only updates data.
+- **`run_live_scope`**: Runs the live display until the window closes. It redraws only the changing parts of the plot (blitting) and can call a function on startup, which the signal scripts use to start audio playback.
+- **Style:** Uses a high-contrast dark theme.
 
 ### 7. Rendering Engine (`render.py`)
 
-The backend for video generation and aesthetic processing.
+Turns recordings into videos.
 
-- **Effects Pipeline:** Modular rendering functions (`setup_clean`, `setup_crt_bloom`) that decouple visual style from data logic.
-- **FFmpeg Wrapper:** Handles the piping of Matplotlib figures to the H.264 encoder.
-- **Time-Base Management:** Resamples signal time to video time to ensure accurate playback speed regardless of the original sampling rate.
+- **Styles:** Each look is its own setup function (`setup_clean`, `setup_crt_bloom`, `setup_cyber_glitch`), separate from the data handling.
+- **FFmpeg:** Sends Matplotlib frames to FFmpeg for H.264 encoding.
+- **Timing:** Maps signal time to video frames so playback runs at the correct speed whatever the sample rate.
 
 ### 8. Audio Synthesis (`audio.py`)
 
-Handles deterministic signal generation and hardware playback for System Identification.
+Generates test signals and plays them through the laptop's audio output.
 
-- **`ContinuousOscillator`**: A context manager for infinite waveform playback (Sine, Triangle, Square) with stateful phase tracking.
-- **`generate_log_sweep`**: Mathematically precise logarithmic sine sweep generation for transfer function analysis.
-- **Device Management:** Wraps `sounddevice` to handle audio stream callbacks and device selection.
+- **`ContinuousOscillator`**: Plays a sine, triangle or square wave until stopped, keeping the phase continuous between audio blocks. Use it in a `with` block.
+- **`generate_log_sweep`**: Generates a logarithmic sine sweep for transfer function measurements.
+- **Audio Devices:** Uses `sounddevice` for playback and device selection.
 
 ### 9. Scientific Analysis (`metrics.py`, `plots.py`)
 
-`metrics.py` computes analysis data; `plots.py` turns it into publication-quality figures for the technical report.
+`metrics.py` computes the analysis results; `plots.py` turns them into the figures for the technical report.
 
-- **Topology visualization:** Plots phase-locked comparisons of Input vs. Output to reveal saturation curves.
-- **Harmonic Fingerprinting:** Generates normalized histograms to quantify Even vs. Odd harmonic distortion.
-- **Export Utility:** `save_pdf_svg` handles the output of vector graphics for LaTeX integration.
+- **Topology Plots:** Overlays aligned input and output waveforms to show the saturation shape.
+- **Harmonic Fingerprinting:** Bar charts of each harmonic's level, normalized, to compare even and odd harmonics.
+- **Export:** `save_pdf_svg` saves each figure as PDF (for the LaTeX report) and SVG (for the READMEs).
 
 ### 10. Chunked Sweep Analysis (`chunked_sweep.py`)
 
@@ -89,7 +89,7 @@ Recovers transfer functions from stream-mode sweep captures, whose 1024-sample b
 
 ## Usage
 
-This package is not intended to be run directly. Import it into your scripts as follows:
+The package isn't run directly; import it into your own scripts:
 
 ```python
 from sysaudio import daq, dsp, config

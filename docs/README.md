@@ -2,41 +2,41 @@
 
 **[📄 Read the Full Engineering Report (PDF)](./systems_audio_tech_report.pdf)**
 
-This directory contains the formal technical documentation for the **Universal RP2040 Analog Interface** and its associated subsystems. It serves as a comprehensive Systems Engineering Technical Report, detailing the recursive journey of building the software to buy the parts, building the power supply to run the device, and building the instrumentation to validate it.
+This directory holds the technical report for the RP2040 oscilloscope and the systems around it. The report covers building the software to order the parts, the power supply to run the pedal, and the instrument to measure it.
 
 ---
 
 ## 1. The Engineering Narrative
 
-The core objective of this project was to bridge the "Full-Stack Gap" between high-level software architecture and physical layer implementation. Rather than purchasing off-the-shelf components, four distinct systems were engineered to support one another:
+The project's goal was to apply software engineering habits to physical hardware. Rather than buying off-the-shelf tools, I built four systems, each supporting the next:
 
-1. **Logistics (Star Ground):** A Python-based BOM engine to solve the procurement problem.
-1. **Infrastructure (Linear Regulator):** A thermal-managed 12V $\to$ 9V supply intended to keep switching noise off the DUT (output ripple not measured).
-1. **Device Under Test (Red Llama):** A CMOS Hex Inverter-based overdrive circuit.
-1. **Instrumentation (RP2040 DAQ):** A custom **FFT Spectrum Analyzer** used to empirically validate the DUT.
+1. **Logistics (Star Ground):** A Python tool that turns a bill of materials (BOM) into a parts order.
+1. **Infrastructure (Linear Regulator):** A heatsinked 12V to 9V supply intended to keep switching noise off the device under test, or DUT (output ripple not measured).
+1. **Device Under Test (Red Llama):** An overdrive circuit built around a CMOS hex inverter chip.
+1. **Instrumentation (RP2040 DAQ):** A data acquisition (DAQ) device and FFT spectrum analyzer used to measure the DUT.
 
 ## 2. Key Findings
 
-The final analysis (detailed in **Chapter 6** of the report) supports soft, asymmetric clipping in the CD4049 CMOS topology, with a modest even-order harmonic bias.
+The analysis (Chapter 6 of the report) shows soft, asymmetric clipping in the CD4049 circuit, with a modest lean towards even-order harmonics.
 
 ### A. Topology Confirmation (Soft Clipping)
 
-- **Hypothesis:** CMOS inverters, when biased linearly, exhibit "Soft Knee" compression rather than the hard-clipping characteristic of silicon diodes.
-- **Result:** Supported. The large-signal transfer curve is a smooth, **asymmetric sigmoid** with no hard clipping corner. The frequency domain (Right) shows the circuit shifting the guitar's harmonics towards even orders (H2 up, H3 down). With a pure 1kHz tone H2 ≈ H3 and the even series leads only from H4 up: consistent with asymmetric, tube-like clipping, but not a dominant 2nd harmonic.
+- **Hypothesis:** CMOS inverters, when biased linearly, show "soft knee" compression rather than the hard clipping of silicon diodes.
+- **Result:** Supported. The large-signal transfer curve is a smooth, asymmetric S-shape with no hard clipping corner. The frequency domain plot (right) shows the circuit shifting the guitar's harmonics towards even orders (H2 up, H3 down). With a pure 1kHz tone, H2 ≈ H3 and the even harmonics lead only from H4 up. That fits asymmetric, tube-like clipping, but without a dominant 2nd harmonic.
 
 ![Topology Analysis](./figures/fig_analysis_topology.svg)
 
 ### B. Signal Gain & Dynamic Range
 
 - **Measurement:** The Red Llama circuit provides approximately **37dB** of gain ($72\times$, peak-to-peak), with the Red Llama capture corrected for the DAQ's 0.5× input divider.
-- **Mechanism:** The circuit amplifies the 49mVpp instrument signal to 3.54Vpp, deep into the saturation of its CMOS inverters. The density of the waveform below visualizes this massive amplification factor.
+- **Mechanism:** The circuit amplifies the 49mVpp guitar signal to 3.54Vpp, driving its CMOS inverters deep into saturation. The plot below compares the input and output waveforms.
 
 ![Gain Stage](./figures/fig_llama_gain.svg)
 
 ### C. System Sensitivity (Noise Floor)
 
 - **Validation:** With the input open, mains pickup is negligible (a 60Hz line of ~0.09mV against 1.3mV of broadband noise).
-- **Metric:** The DAQ achieved a read noise of **1.29mV RMS** (confirmed within 1% by an independent hum-residual measurement), giving a full-scale dynamic range of **59.1dB** (9.5 effective bits).
+- **Metric:** The DAQ's read noise is **1.29mV RMS** (confirmed within 1% by a separate measurement of the residual after removing hum), giving a full-scale dynamic range of **59.1dB** (9.5 effective bits).
 
 ![Noise Floor](./figures/fig_validation_noise.svg)
 
@@ -44,13 +44,13 @@ The final analysis (detailed in **Chapter 6** of the report) supports soft, asym
 
 ### D. Transfer Function (Phase II)
 
-- **Method:** The Red Llama was driven by a 20Hz-20kHz log sine sweep from the host DAC (`scripts/signal/play_sweep.py`). Because stream-mode captures have gaps between 1024-sample blocks, the response was recovered by per-block harmonic fitting (`sysaudio.chunked_sweep`) rather than ESS deconvolution.
-- **Result:** At max gain the response is flat within 0.5dB from 97Hz to 3.4kHz, rolling off to -2.8dB at 19.1kHz. Distortion is heavy and frequency-independent (H2 ≈ H3 ≈ -13dBc), over 30dB above the measurement chain's floor, and cross-validated against a burst capture within 0.2dB. Across H2-H8 the even harmonics carry 1.34× the energy of the odd ones for a pure 1kHz tone, a modest bias consistent with asymmetric clipping.
+- **Method:** The Red Llama was driven by a 20Hz to 20kHz log sine sweep from the laptop's sound card (generated by `sysaudio.audio` in notebook `03`). Stream-mode captures have gaps between 1024-sample blocks, so the response was recovered by fitting the harmonics in each block separately (`sysaudio.chunked_sweep`) rather than by exponential sine sweep (ESS) deconvolution.
+- **Result:** At max gain the response is flat within 0.5dB from 97Hz to 3.4kHz, rolling off to -2.8dB at 19.1kHz. Distortion is heavy and the same at all frequencies (H2 ≈ H3 ≈ -13dBc), over 30dB above the measurement chain's own distortion, and agrees with a burst capture within 0.2dB. For a pure 1kHz tone, the even harmonics (H2 to H8) carry 1.34× the energy of the odd ones, a modest lean consistent with asymmetric clipping.
 
 ![Transfer Function](./figures/fig_transfer_bode.svg)
 
 ## 3. Artifacts
 
 - **`systems_audio_tech_report.tex`**: The LaTeX source code for the technical report.
-- **`figures/`**: Generated matplotlib exports from the analysis pipeline.
-- **`systems_audio_tech_report.pdf`**: The compiled documentation.
+- **`figures/`**: Figures exported by the analysis notebooks (PDF for the report, SVG for the READMEs).
+- **`systems_audio_tech_report.pdf`**: The compiled report.
