@@ -161,11 +161,7 @@ def generate_video(
 
     raw_data, fs = io.load_signal(filepath)
     # Ensure float voltage for rendering
-    data = (
-        dsp.raw_to_volts(raw_data)
-        if np.issubdtype(raw_data.dtype, np.integer)
-        else raw_data
-    )
+    data = dsp.to_volts(raw_data)
 
     total_samples = data.size
     duration = total_samples / fs

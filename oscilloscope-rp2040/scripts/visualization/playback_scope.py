@@ -8,7 +8,6 @@ experience. It is useful for reviewing long capture sessions.
 
 import os
 
-import numpy as np
 from sysaudio import config, dsp, io, viz
 
 
@@ -28,9 +27,7 @@ def main() -> None:
     data, fs = io.load_signal(filepath)
 
     # 2. Normalize Data if needed (handle raw uint16 captures vs processed floats)
-    if np.issubdtype(data.dtype, np.integer):
-        print("Detected Raw ADC data. Converting to Volts...")
-        data = dsp.raw_to_volts(data)
+    data = dsp.to_volts(data)
 
     # 3. Launch Visualization
     viz.run_playback_scope(data, fs, title=f"PLAYBACK: {os.path.basename(filepath)}")

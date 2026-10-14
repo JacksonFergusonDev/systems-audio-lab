@@ -1,14 +1,11 @@
-import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-try:
+# sounddevice needs the PortAudio system library; import it only for playback
+# so that analysis works on machines without it.
+if TYPE_CHECKING:
     import sounddevice as sd
-except ImportError:
-    print("❌ Missing dependency: sounddevice")
-    print("   Install via: pip install sounddevice")
-    sys.exit(1)
 
 
 def generate_log_sweep(
@@ -155,6 +152,8 @@ class ContinuousOscillator:
 
     def __enter__(self) -> "ContinuousOscillator":
         """Enter the audio stream context and start playback if configured."""
+        import sounddevice as sd
+
         self._stream = sd.OutputStream(
             samplerate=self.fs, channels=1, dtype="float32", callback=self._callback
         )

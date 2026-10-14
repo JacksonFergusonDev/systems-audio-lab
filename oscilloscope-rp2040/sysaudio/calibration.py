@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,12 +10,15 @@ from scipy.signal import windows
 from . import audio, config, daq, dsp
 
 
-def save_calibration(fs: float, method: str = "mains_60hz") -> None:
+def save_calibration(
+    fs: float, method: str = "mains_60hz", uncertainty_pct: float | None = None
+) -> None:
     """
     Save the calibrated sampling rate to the calibration JSON file.
 
     Creates the parent directory for the calibration file if it does not exist.
-    The file will contain the sampling rate, a timestamp, and the hardware default.
+    Any existing calibration is kept under the "previous" key, and its
+    "hardware_default" carried forward, so the file holds the full history.
 
     Parameters
     ----------
@@ -22,17 +26,32 @@ def save_calibration(fs: float, method: str = "mains_60hz") -> None:
         The calculated true sampling rate in Hz.
     method : str, optional
         How `fs` was derived (e.g. "mains_60hz", "reference_tone_1000hz").
+    uncertainty_pct : float, optional
+        One-sigma uncertainty of `fs` in percent, if known.
     """
     # 1. Create data directory if it doesn't exist yet
     os.makedirs(os.path.dirname(config.CALIBRATION_FILE_PATH), exist_ok=True)
 
-    data = {
+    previous: dict[str, Any] | None = None
+    if os.path.exists(config.CALIBRATION_FILE_PATH):
+        try:
+            with open(config.CALIBRATION_FILE_PATH) as f:
+                previous = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"⚠️ Existing calibration unreadable, not kept in history: {e}")
+
+    data: dict[str, Any] = {
         "fs": fs,
         "timestamp": time.time(),
         "date_str": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "hardware_default": config.FS_DEFAULT,
         "method": method,
     }
+    if uncertainty_pct is not None:
+        data["uncertainty_pct"] = uncertainty_pct
+    if previous is not None:
+        if "hardware_default" in previous:
+            data["hardware_default"] = previous.pop("hardware_default")
+        data["previous"] = previous
 
     with open(config.CALIBRATION_FILE_PATH, "w") as f:
         json.dump(data, f, indent=4)
@@ -226,5 +245,9 @@ def calibrate_fs_with_tone(
 
     fs_true, fs_std = fs_from_reference_tone(volts, config.FS_DEFAULT, f_ref)
     print(f"Calibrated FS: {fs_true:.1f} +/- {fs_std:.1f} Hz (ref {f_ref:.0f} Hz)")
-    save_calibration(fs_true, method=f"reference_tone_{f_ref:.0f}hz")
+    save_calibration(
+        fs_true,
+        method=f"reference_tone_{f_ref:.0f}hz",
+        uncertainty_pct=100 * fs_std / fs_true,
+    )
     return fs_true

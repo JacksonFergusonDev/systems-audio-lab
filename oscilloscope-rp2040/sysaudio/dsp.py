@@ -22,6 +22,28 @@ def raw_to_volts(raw_data: np.ndarray) -> np.ndarray:
     return (raw_data / config.ADC_MAX_VAL) * config.V_REF
 
 
+def to_volts(signal: np.ndarray) -> np.ndarray:
+    """
+    Return a capture in volts, whichever form it was stored in.
+
+    Burst captures are saved in volts (float) and stream captures as raw ADC
+    counts (integer); integer arrays are converted, float arrays returned as-is.
+
+    Parameters
+    ----------
+    signal : np.ndarray
+        Signal loaded from a capture file.
+
+    Returns
+    -------
+    np.ndarray
+        The signal in volts at the ADC.
+    """
+    if np.issubdtype(signal.dtype, np.integer):
+        return raw_to_volts(signal)
+    return signal
+
+
 def remove_dc(signal: np.ndarray) -> np.ndarray:
     """
     Subtract the mean (DC offset) from the signal.
@@ -82,15 +104,18 @@ def compute_spectrum(signal: np.ndarray, fs: float) -> tuple[np.ndarray, np.ndar
     freq_axis : np.ndarray
         (N/2 + 1,) Array of frequency bins in Hz.
     fft_mag : np.ndarray
-        (N/2 + 1,) Array of magnitude values (normalized).
+        (N/2 + 1,) Peak amplitude of each bin, in input units. A sine of
+        amplitude A centred on a bin reads A.
     """
     n = signal.size
     # Apply window to reduce spectral leakage
-    windowed = signal * spsig.windows.hann(n)
+    window = spsig.windows.hann(n)
+    windowed = signal * window
 
-    # FFT
+    # FFT, scaled by the window's coherent gain (sum(w) ~ n/2 for Hann) so
+    # that magnitudes are peak amplitudes rather than half of them
     fft_complex = np.fft.rfft(windowed)
-    fft_mag = (2.0 / n) * np.abs(fft_complex)
+    fft_mag = (2.0 / np.sum(window)) * np.abs(fft_complex)
 
     # Frequency axis
     freq_axis = np.fft.rfftfreq(n, d=1.0 / fs)
@@ -283,7 +308,9 @@ def estimate_tone_frequency(
     noise_var = ssr / n
     snr = (amp**2 / 2) / noise_var if noise_var > 0 else np.inf
     duration = n / fs
-    std = float(np.sqrt(6 / (n * snr)) / (np.pi * duration))
+    # CRLB for a sinusoid's frequency (Kay, Fundamentals of SSP I):
+    # var(f) >= 12 / ((2 pi)^2 snr n^3) in cycles/sample
+    std = float(np.sqrt(3 / (n * snr)) / (np.pi * duration))
     return f_hat, std
 
 
