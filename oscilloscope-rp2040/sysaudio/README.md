@@ -18,15 +18,17 @@ A stateless functional module for manipulating raw ADC data.
 
 - **`raw_to_volts`**: Vectorized conversion of `uint16` (0–65535) to Float64 (0–3.3V).
 - **`software_trigger`**: Implements a rising-edge detection algorithm to stabilize periodic waveforms for visualization (mimics hardware oscilloscope triggers).
-- **`compute_spectrum`**: Wraps `numpy.fft` with Hanning window application to reduce spectral leakage.
+- **`compute_spectrum`**: Wraps `numpy.fft` with a Hann window to reduce spectral leakage, scaled by the window's coherent gain so magnitudes read as peak amplitudes.
+- **`harmonic_amplitudes` / `calculate_selective_thd`**: Measure each harmonic's main-lobe energy with the local noise floor removed.
+- **`estimate_tone_frequency`**: Least-squares frequency fit of a steady tone, resolving far below one FFT bin.
 
 ### 3. Calibration Engine (`calibration.py`)
 
-Contains the logic for the "Mains Hum Reference" calibration.
+Derives the *true* sample rate ($F_s$), which MicroPython's loop timing sets rather than a hardware clock.
 
-- **Algorithm:** Captures a burst, isolates the 60Hz component using FFT, and calculates the spectral offset.
-- **Precision:** Uses a weighted average of bins around the peak to achieve sub-bin frequency accuracy.
-- **Output:** Returns the *true* sample rate ($F_s$), correcting for MicroPython interpreter latency.
+- **Reference tone (preferred):** `calibrate_fs_with_tone` / `fs_from_reference_tone` fit a crystal-referenced sound-card tone; the measured rate is `config.FS_DEFAULT`.
+- **Mains hum (legacy):** `calibrate_fs_robust` locates the 60 Hz line. The grid wanders and the coupled hum is weak, so it is only good to about 0.2%.
+- **History:** `save_calibration` keeps earlier calibrations under `"previous"` in `data/calibration.json`.
 
 ### 4. Diagnostics (`diagnostics.py`)
 
@@ -34,13 +36,16 @@ Automated health checks for the analog front end.
 
 - **Clipping Detection:** Flags samples nearing 0V or 3.3V.
 - **Bias Drift:** Monitors the DC mean to ensure $V_{mid}$ remains centered ($\approx 1.65V$).
-- **SNR Calculation:** Compares signal magnitude against the noise floor.
+- **Peak Check:** Reports the dominant spectral peaks as a pitch sanity check.
 
 ### 5. Input/Output (`io.py`)
 
 Handles data persistence and serialization.
 
 - **Format:** Uses NumPy's compressed archive format (`.npz`) to store the signal array and sampling rate metadata efficiently.
+- **Sample rate:** `load_signal` returns the measured `config.FS_DEFAULT`; the `fs` stored in each file is what was assumed at capture time (pass `use_stored_fs=True` to get it).
+- **Units:** Burst captures store volts, stream captures raw ADC counts; `dsp.to_volts` accepts either.
+- **Legacy metadata:** In the existing captures `clipped` means "failed the health check" (weak signals included) and `adc_bits` reads 16 for the 12-bit ADC. The files are kept as recorded; new captures store `clipped` and `healthy` separately.
 - **Legacy Support:** Robust loading logic handles schema changes from previous firmware versions.
 
 ### 6. Visualization Primitives (`viz.py`)

@@ -1,7 +1,6 @@
 import time
 
 import numpy as np
-import sounddevice as sd
 
 from . import audio, config, daq, diagnostics, dsp, io, plots
 
@@ -44,6 +43,8 @@ def capture_sweep_transfer(
     str
         The file path of the saved dataset.
     """
+    import sounddevice as sd
+
     print(f"🔹 Generating Sweep ({f_start}-{f_end}Hz, {duration}s)...")
     wave = audio.generate_log_sweep(f_start, f_end, duration, fs_audio, amp)
 
@@ -97,7 +98,8 @@ def capture_sweep_transfer(
         v_min=float(v_min),
         v_max=float(v_max),
         dc_offset=float(v_mean),
-        clipped=(not is_healthy),
+        clipped=diagnostics.detect_clipping(volts),
+        healthy=is_healthy,
         peak_voltage=float(peak_amp),
         user_notes=notes,
     )
@@ -174,7 +176,8 @@ def capture_steady_transfer(
                 v_min=float(v_min),
                 v_max=float(v_max),
                 dc_offset=float(v_mean),
-                clipped=(not is_healthy),
+                clipped=diagnostics.detect_clipping(volts),
+                healthy=is_healthy,
                 peak_voltage=float(peak_amp),
                 user_notes=notes,
             )
@@ -227,7 +230,8 @@ def capture_instrument_clip(filename: str, notes: str = "") -> str:
             v_min=float(np.min(volts)),
             v_max=float(np.max(volts)),
             dc_offset=float(v_mean),
-            clipped=(not is_healthy),
+            clipped=diagnostics.detect_clipping(volts),
+            healthy=is_healthy,
             peak_voltage=float(peak_amp),
             dominant_freq=dom_freq,
             user_notes=notes,

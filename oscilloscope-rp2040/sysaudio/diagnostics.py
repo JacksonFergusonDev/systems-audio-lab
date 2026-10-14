@@ -6,6 +6,23 @@ from scipy.signal import find_peaks
 from . import config, dsp
 
 
+def detect_clipping(voltages: np.ndarray) -> bool:
+    """
+    Report whether a capture reaches either ADC rail.
+
+    Parameters
+    ----------
+    voltages : np.ndarray
+        (N,) array of signal voltages (float).
+
+    Returns
+    -------
+    bool
+        True if any sample is within 20 mV of 0 V or 50 mV of `config.V_REF`.
+    """
+    return bool(np.min(voltages) <= 0.02 or np.max(voltages) >= config.V_REF - 0.05)
+
+
 def check_signal_health(voltages: np.ndarray) -> bool:
     """
     Analyzes the signal for clipping, silence, and bias drift.
@@ -36,7 +53,7 @@ def check_signal_health(voltages: np.ndarray) -> bool:
     is_healthy = True
 
     # Check A: Clipping
-    if v_min <= 0.02 or v_max >= (config.V_REF - 0.05):
+    if detect_clipping(voltages):
         print("⚠️ WARNING: SIGNAL CLIPPING! Hitting voltage rails.")
         is_healthy = False
 
@@ -52,7 +69,9 @@ def check_signal_health(voltages: np.ndarray) -> bool:
     return is_healthy
 
 
-def analyze_spectrum_peaks(voltages: np.ndarray, fs: float) -> tuple[float, np.ndarray]:
+def analyze_spectrum_peaks(
+    voltages: np.ndarray, fs: float, min_spacing_hz: float = 40.0
+) -> tuple[float, np.ndarray]:
     """
     Perform a frequency domain sanity check by identifying dominant peaks.
 
@@ -62,6 +81,9 @@ def analyze_spectrum_peaks(voltages: np.ndarray, fs: float) -> tuple[float, np.n
         (N,) array of signal voltages.
     fs : float
         Sampling rate in Hz.
+    min_spacing_hz : float, optional
+        Minimum separation between reported peaks. The default keeps the
+        harmonics of a low E string (82 Hz apart) distinct.
 
     Returns
     -------
@@ -78,7 +100,8 @@ def analyze_spectrum_peaks(voltages: np.ndarray, fs: float) -> tuple[float, np.n
     # 3. Find Peaks (Top 3)
     # Ignore tiny noise peaks (<10% of max) and enforce separation
     height_thresh = np.max(mags) * 0.1
-    peaks_idx, props = find_peaks(mags, height=height_thresh, distance=50)
+    distance = max(1, int(min_spacing_hz / (freqs[1] - freqs[0])))
+    peaks_idx, props = find_peaks(mags, height=height_thresh, distance=distance)
 
     # Sort by height (loudest first)
     props_dict = cast(dict[str, Any], props)

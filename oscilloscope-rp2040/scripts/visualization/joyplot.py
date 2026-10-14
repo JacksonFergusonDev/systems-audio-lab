@@ -35,7 +35,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # Load signal using the standard project loader
-    # io.load_signal handles FileNotFoundError and legacy formats internally
+    # io.load_signal handles legacy formats internally
     signal, _ = io.load_signal(args.input)
 
     plots.plot_joyplot_stacked(

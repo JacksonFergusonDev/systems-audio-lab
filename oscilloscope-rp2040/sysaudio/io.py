@@ -1,6 +1,5 @@
 import glob
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -48,14 +47,15 @@ def save_signal(
     ensure_dir(directory)
 
     # ISO 8601 Timestamp
-    timestamp_str = datetime.now().isoformat()
-    filename_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    now = datetime.now()
+    timestamp_str = now.isoformat()
+    filename_ts = now.strftime("%Y%m%d_%H%M%S")
 
     filename = f"{prefix}_{filename_ts}.npz"
     path = os.path.join(directory, filename)
 
     # We combine core data with the optional metadata
-    # 'utc_timestamp' is added automatically for provenance
+    # 'timestamp' (local time) is added automatically for provenance
     np.savez_compressed(path, signal=signal, fs=fs, timestamp=timestamp_str, **metadata)
 
     # Calculate size for user feedback
@@ -67,57 +67,62 @@ def save_signal(
 
 
 def load_signal(
-    filepath: str | Path, fs_override: float | None = None
+    filepath: str | Path,
+    fs_override: float | None = None,
+    *,
+    use_stored_fs: bool = False,
 ) -> tuple[np.ndarray, float]:
     """
     Load data and sampling rate from an .npz file.
 
+    The `fs` stored in each capture is the rate assumed at capture time
+    (97,859.6 Hz from the mains calibration, or 97,793.1 Hz), not the measured
+    rate, so `config.FS_DEFAULT` is returned unless asked otherwise.
+
     Parameters
     ----------
-    filepath : str
+    filepath : str or Path
         Path to the .npz file.
     fs_override : float, optional
-        Sampling rate to return instead of the one stored in the file. The
-        stored value records what was assumed at capture time; pass
-        `config.FS_DEFAULT` to analyse with the measured rate.
+        Sampling rate to return. Takes precedence over everything else.
+    use_stored_fs : bool, optional
+        Return the rate stored in the file (falling back to
+        `config.FS_DEFAULT` if it has none). Use this only to study what was
+        assumed at capture time.
 
     Returns
     -------
     Tuple[np.ndarray, float]
-        (signal, fs) where signal is the data array and fs is the sampling rate.
+        (signal, fs). Burst captures hold volts (float) and stream captures
+        raw ADC counts (integer); `dsp.to_volts` handles both.
 
     Raises
     ------
-    SystemExit
-        If the file is not found.
+    FileNotFoundError
+        If the file does not exist.
     KeyError
         If 'signal' or 'data' keys are missing in the archive.
     """
-    try:
-        with np.load(filepath) as archive:
-            # Handle variable naming conventions from legacy versions
-            if "signal" in archive:
-                sig = archive["signal"]
-            elif "data" in archive:
-                sig = archive["data"]  # Handle stream.py legacy format
-                # Flatten if it was a stacked array
-                if sig.ndim > 1:
-                    sig = sig.flatten()
-            else:
-                raise KeyError("No 'signal' or 'data' key found in archive.")
+    with np.load(filepath) as archive:
+        # Handle variable naming conventions from legacy versions
+        if "signal" in archive:
+            sig = archive["signal"]
+        elif "data" in archive:
+            sig = archive["data"]  # Handle stream.py legacy format
+            # Flatten if it was a stacked array
+            if sig.ndim > 1:
+                sig = sig.flatten()
+        else:
+            raise KeyError("No 'signal' or 'data' key found in archive.")
 
-            # Load FS or default
-            if fs_override is not None:
-                fs = float(fs_override)
-            elif "fs" in archive:
-                fs = float(archive["fs"])
-            else:
-                fs = float(config.FS_DEFAULT)
+        if fs_override is not None:
+            fs = float(fs_override)
+        elif use_stored_fs and "fs" in archive:
+            fs = float(archive["fs"])
+        else:
+            fs = float(config.FS_DEFAULT)
 
-            return sig, fs
-    except FileNotFoundError:
-        print(f"File not found: {filepath}")
-        sys.exit(1)
+        return sig, fs
 
 
 def select_file_cli(directory: str) -> str | None:
@@ -157,6 +162,12 @@ def select_file_cli(directory: str) -> str | None:
 def scan_metadata(directory: str) -> pd.DataFrame:
     """
     Scan a directory recursively for .npz files and extract their metadata.
+
+    Captures made before 2026-10 carry two misleading fields, kept as recorded:
+    ``clipped`` is True for any capture that failed the health check, including
+    weak but unclipped signals, and ``adc_bits`` is 16 although the ADC is
+    12-bit (`read_u16` left-justifies the samples). ``fs`` is the rate assumed
+    at capture time; see `load_signal`.
 
     Parameters
     ----------

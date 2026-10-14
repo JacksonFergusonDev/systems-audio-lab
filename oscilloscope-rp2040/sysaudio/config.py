@@ -13,7 +13,8 @@ BAUD_RATE: int = 115200
 TIMEOUT: float = 3.0  # seconds
 
 # ADC / Hardware Params
-ADC_BITS: int = 16
+ADC_BITS: int = 12  # RP2040 ADC resolution
+# read_u16() left-justifies the 12-bit result into 0-65535
 ADC_MAX_VAL: int = 65535
 V_REF: float = 3.3
 V_MID: float = 1.65  # Virtual ground / Bias voltage

@@ -67,19 +67,16 @@ class DAQInterface:
         if self.ser and self.ser.is_open:
             self.ser.close()
 
-    def capture_burst(self, samples: int = config.BURST_SAMPLES) -> np.ndarray:
+    def capture_burst(self) -> np.ndarray:
         """
         Send the burst command ('s') and retrieve a synchronous block of data.
 
-        Parameters
-        ----------
-        samples : int, optional
-            The number of samples to capture. Defaults to config.BURST_SAMPLES.
+        The firmware always returns `config.BURST_SAMPLES` samples.
 
         Returns
         -------
         np.ndarray
-            (samples,) array of uint16 raw ADC values.
+            (config.BURST_SAMPLES,) array of uint16 raw ADC values.
 
         Raises
         ------
@@ -94,7 +91,7 @@ class DAQInterface:
         self.ser.reset_input_buffer()
         self.ser.write(b"s")
 
-        expected_bytes = samples * 2
+        expected_bytes = config.BURST_SAMPLES * 2
         raw = self.ser.read(expected_bytes)
 
         if len(raw) != expected_bytes:
@@ -104,34 +101,31 @@ class DAQInterface:
 
         return np.frombuffer(raw, dtype="<u2")
 
-    def stream_generator(
-        self, chunk_size: int = config.LIVE_SAMPLES
-    ) -> Generator[np.ndarray]:
+    def stream_generator(self) -> Generator[np.ndarray]:
         """
         Yield continuous chunks of data for live plotting or processing.
 
         Sends the stream command ('v') and enters a loop yielding data blocks.
         The loop continues indefinitely until the generator is closed.
 
-        Parameters
-        ----------
-        chunk_size : int, optional
-            The number of samples per yielded chunk. Defaults to config.LIVE_SAMPLES.
-
         Yields
         ------
         np.ndarray
-            (chunk_size,) array of uint16 raw ADC values.
+            (config.LIVE_SAMPLES,) array of uint16 raw ADC values, the
+            firmware's fixed stream block size.
         """
         if self.ser is None:
             raise AttributeError("Serial device not connected.")
 
+        expected_bytes = config.LIVE_SAMPLES * 2
         self.ser.reset_input_buffer()
         while True:
             self.ser.write(b"v")
-            raw = self.ser.read(chunk_size * 2)
+            raw = self.ser.read(expected_bytes)
 
-            if len(raw) != chunk_size * 2:
+            if len(raw) != expected_bytes:
+                # Drop any late remainder so the next block starts aligned
+                self.ser.reset_input_buffer()
                 continue
 
             yield np.frombuffer(raw, dtype="<u2")
