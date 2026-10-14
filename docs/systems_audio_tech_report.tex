@@ -15,24 +15,19 @@
 \usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
 \addbibresource{references.bib}
 
-% FONTS (LuaLaTeX): fontspec + unicode-math (Libertinus family)
-\usepackage{fontspec}
+% FONTS (LuaLaTeX): New Computer Modern for serif, sans and math (loads
+% fontspec + unicode-math); JetBrains Mono for code
+\usepackage{newcomputermodern}
 
-% Emoji fallback (LuaLaTeX + luaotfload)
+% Emoji fallback (LuaLaTeX + luaotfload). The Nerd Font covers U+26A0 but not
+% the other emoji in the listed source (U+274C, U+1F449, U+1F4BE, ...).
 \directlua{
   luaotfload.add_fallback("monofontemoji", {
       "Apple Color Emoji:mode=harf;"
   })
 }
 
-% Text fonts
-\setmainfont{Libertinus Serif}[RawFeature={fallback=monofontemoji}]
-\setsansfont{Libertinus Sans}[Scale=MatchLowercase,RawFeature={fallback=monofontemoji}]
-\setmonofont{Libertinus Mono}[Scale=MatchLowercase,RawFeature={fallback=monofontemoji}]
-
-% Math fonts (OpenType/Unicode math)
-\usepackage{unicode-math}
-\setmathfont{Libertinus Math}
+\setmonofont{JetBrainsMono Nerd Font Mono}[Scale=MatchLowercase,RawFeature={fallback=monofontemoji}]
 
 % --- HYPERLINKS STYLING ---
 \usepackage[pdfusetitle]{hyperref}
