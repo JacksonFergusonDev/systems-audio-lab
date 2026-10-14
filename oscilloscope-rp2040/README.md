@@ -1,14 +1,14 @@
 # Universal RP2040 Spectrograph & Oscilloscope
 
-**Status:** Commissioned (Jan 2026) | **Revision:** 1.1 (System ID Upgrade)
+**Status:** Commissioned (Jan 2026) | **Version:** v0 prototype, with Phase 2 transfer function analysis
 
-This project transforms a Raspberry Pi RP2040-Zero into a precision, calibrated Data Acquisition (DAQ) device for high-fidelity audio and spectral analysis. Unlike standard ADC examples, this system features a custom Analog Front End (AFE) with bias injection, signal clamping, and a "Store-and-Forward" firmware architecture to decouple sampling stability from USB latency.
+This project turns a Waveshare RP2040-Zero into a calibrated data acquisition (DAQ) device for audio and spectrum analysis. Beyond the microcontroller's built-in ADC, it adds an analog front end (AFE), the circuit between the input jack and the ADC, which scales, biases and clamps the signal. The firmware captures a full burst into memory before sending anything over USB ("store-and-forward"), so USB delays can't disturb sampling.
 
-In **Phase 2**, the system was expanded to include a host-side **Function Generator** and **Transfer Function Analyzer**, allowing for closed-loop system identification (Bode plots, Linearity testing, and THD measurement).
+In Phase 2, the laptop gained a function generator (using its sound card) and transfer function analysis, so the system can drive a circuit and measure its response: Bode plots, linearity tests and total harmonic distortion (THD).
 
 <img src="./schematics/exports/signal_conditioning_universal-compact.svg" width="80%" alt="Schematic Diagram">
 
-*A more informational version of the schematic, along with an explanation of the circuit, can be found in the [schematic documentation](./schematics/README.md).*
+*A more detailed version of the schematic, with an explanation of the circuit, is in the [schematic documentation](./schematics/README.md).*
 
 ## ⚡ System Specifications
 
@@ -25,68 +25,68 @@ In **Phase 2**, the system was expanded to include a host-side **Function Genera
 
 ### [`schematics/`](./schematics/)
 
-The physical layer. Contains the schematics and fabrication exports for the Universal AFE.
+The hardware: schematics and fabrication exports for the analog front end.
 
-- **Topology:** Switched Reference with selectable attenuation (Line Level vs. High-Z/Guitar).
-- **Protection:** Dual-stage clamping ($R_{prot}$ + 1N4148 diodes) prevents RP2040 latch-up.
+- **Topology:** A jumper selects the divider's reference, with socketed resistors to set attenuation (line level or high-impedance guitar input).
+- **Protection:** A series resistor ($R_{prot}$) and two 1N4148 clamp diodes keep the input within the RP2040's safe range.
 
 ### [`firmware/`](./firmware)
 
-The MicroPython logic running on the MCU.
+The MicroPython program running on the microcontroller.
 
-- **Engine:** Uses `@micropython.native` emitters for a jitter-free polling loop.
-- **Protocol:** Implements a binary "Handshake" protocol (`s` for Science Burst, `v` for Video) to manage USB serial backpressure.
+- **Engine:** The sampling loop is compiled to machine code with `@micropython.native`, which makes it fast and keeps its timing steady.
+- **Protocol:** The host sends a one-byte command (`s` for a full "science" burst, `v` for a short "video" burst) and the device replies with raw samples, so it never sends faster than the host reads.
 
 ### [`sysaudio/`](./sysaudio)
 
 The Python library backing the analysis pipeline.
 
 - **Core & Hardware**
-  - `sysaudio.daq`: Hardware abstraction for USB UART stream processing.
-  - `sysaudio.calibration`: Routines for robust sample rate ($F_s$) verification.
+  - `sysaudio.daq`: Talks to the device over USB serial.
+  - `sysaudio.calibration`: Measures the true sample rate ($F_s$).
   - `sysaudio.audio`: Host-side signal generation (Sine, Square, Log Sweeps) via `sounddevice`.
 - **Experimentation**
-  - `sysaudio.experiments`: High-level automation for Notebooks (Linearity, Bandwidth, THD captures).
-  - `sysaudio.io`: Standardized file handling for burst (`.npz`) and continuous signal data.
+  - `sysaudio.experiments`: Automated captures used by the notebooks (linearity, bandwidth, THD).
+  - `sysaudio.io`: Saves and loads burst and continuous captures (`.npz`).
 - **Analysis & Viz**
-  - `sysaudio.dsp`: Signal processing primitives (FFT, THD calculation, Triggering).
-  - `sysaudio.plots`: Publication-ready plotting wrappers (Bode, Transfer Curves, THD Fingerprints).
-  - `sysaudio.viz`: Real-time rendering engines for the live oscilloscope.
+  - `sysaudio.dsp`: Signal processing (FFT, THD, triggering).
+  - `sysaudio.plots`: The report's figures (Bode plots, transfer curves, harmonic profiles).
+  - `sysaudio.viz`: Plotting for the live oscilloscope.
 
 ### [`scripts/`](./scripts)
 
-User-facing tools for interaction.
+Command-line tools.
 
 - **`capture/`**: Headless recording tools.
-  - `record.py`: High-fidelity burst capture.
-  - `master_transfer.py`: Automated stimulus-response testing (Sweep/Steady).
+  - `record.py`: Captures one 16,384-sample burst.
+  - `master_transfer.py`: Plays a test signal and records the response (sweep or steady tone).
   - `stream.py`: Continuous data streaming utility.
 - **`signal/`**: Interactive function generators.
-  - `play_wave.py`: Infinite waveform generator with live scope.
+  - `play_wave.py`: Plays a continuous waveform and shows the live scope.
   - `play_sweep.py`: Logarithmic sine sweep generator.
 - **`visualization/`**: Monitoring and rendering.
   - `live_scope.py`: Real-time oscilloscope with FFT.
   - `playback_scope.py`: Offline replay of captured signal files.
   - `joyplot.py`: Ridge-line plot generation for spectral waterfalls.
   - `render_scope_video.py`: Exports scope data to video frames.
-- **`fun/`**: Creative coding experiments.
+- **`fun/`**: Visual experiments.
   - `neon_torus.py`: XY oscilloscope visualization.
-  - `render_landscape.py`: 3D terrain generation from audio data. Used to generate the title graphic for [systems_audio_tech_report.pdf](../docs/systems_audio_tech_report.pdf)
+  - `render_landscape.py`: Renders audio data as a 3D landscape. It made the title graphic for [systems_audio_tech_report.pdf](../docs/systems_audio_tech_report.pdf).
 
 ### [`notebooks/`](./notebooks)
 
-The scientific workbench.
+The analysis, step by step.
 
 - **`01_instrument_acquisition.ipynb`**: Hardware calibration and raw data inspection.
-- **`02_instrument_analysis.ipynb`**: Empirical characterization of the Red Llama Overdrive (Harmonics & Topology).
+- **`02_instrument_analysis.ipynb`**: Measures the Red Llama overdrive with guitar signals (gain, harmonics, clipping shape).
 - **`03_transfer_acquisition.ipynb`**: Automated capture of transfer function datasets.
   - *Set A:* Linearity (Triangle Wave).
   - *Set B:* Bandwidth (Log Sine Sweep).
   - *Set C:* Standard THD (1kHz Sine).
-- **`04_transfer_analysis.ipynb`**: System Identification.
+- **`04_transfer_analysis.ipynb`**: Analyzes the test-signal captures.
   - *Bode Response:* Magnitude response and harmonics vs. frequency (chunked sweep fitting).
-  - *Transfer Curves:* Input vs. Output linearity mapping.
-  - *THD Fingerprinting:* Harmonic distortion profiling.
+  - *Transfer Curves:* Output plotted against input, showing where the circuit stops being linear.
+  - *THD Fingerprinting:* The level of each harmonic.
 
 ## Hardware Requirements
 
@@ -114,7 +114,7 @@ Flash the RP2040 with MicroPython (v1.27+) and copy `firmware/main.py` to the ro
 
 ### 2. Host Environment
 
-Dependencies are managed at the **project root**. Run the following from the top-level `systems-audio-lab` directory:
+Dependencies are managed at the project root. Run this from the top-level `systems-audio-lab` directory:
 
 ```bash
 # Install dependencies and link the sysaudio package
@@ -123,7 +123,7 @@ uv pip install -e .
 
 ### 3. Execution
 
-Run scripts from the project root to ensure proper package resolution.
+Run scripts from the project root so Python can find the `sysaudio` package.
 
 Real-Time Monitoring:
 
@@ -139,17 +139,18 @@ python oscilloscope-rp2040/scripts/signal/play_wave.py
 
 Automated Transfer Function Capture:
 
+The script takes no arguments: set `MODE` at the top of the file to `"sweep"` (a 5-second 20 Hz to 20 kHz log sweep) or `"steady"` (a 1 kHz tone).
+
 ```bash
-# Capture a 5-second log sweep for Bode plotting
-python oscilloscope-rp2040/scripts/capture/master_transfer.py sweep --duration 5 --amp 0.5
+python oscilloscope-rp2040/scripts/capture/master_transfer.py
 ```
 
 ---
 
 ## Future Development
 
-This documentation describes the **v0 Prototype** architecture.
+This documentation describes the v0 prototype.
 
-Development has begun on **v1.0 ("The Silicon Revision")**, the first product iteration, which will transition this logic from a perfboard prototype to an integrated PCBA with dedicated ADCs and DACs.
+Development has begun on v1.0 ("The Silicon Revision"), which moves the design from perfboard to a custom printed circuit board with dedicated ADC and DAC chips.
 
-**View the full [v1.0 Roadmap and Specification](../README.md#-future-roadmap-silicon-revision-v10) in the project root.**
+See the [v1.0 roadmap](../README.md#-future-roadmap-silicon-revision-v10) in the project root.
