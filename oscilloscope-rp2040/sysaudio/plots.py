@@ -218,9 +218,9 @@ def analyze_harmonics_fixed(
     if len(mags) >= 1:
         print(f"Fundamental (1f): {mags[0]:.2f}")
     if len(mags) >= 2:
-        print(f"2nd Harmonic (2f): {mags[1]:.2f} (Octave - Warmth/Asymmetry)")
+        print(f"2nd Harmonic (2f): {mags[1]:.2f} (octave; even order)")
     if len(mags) >= 3:
-        print(f"3rd Harmonic (3f): {mags[2]:.2f} (Fifth - Square/Symmetry)")
+        print(f"3rd Harmonic (3f): {mags[2]:.2f} (octave + fifth; odd order)")
 
     fig = plt.figure(figsize=(10, 5))
     custom_palette = {"Odd": COLORS["odd"], "Even": COLORS["even"]}
@@ -511,9 +511,9 @@ def plot_final_report(
         ax2.set_ylabel("Relative Amplitude (Fund. = 1.0)")
         ax2.grid(axis="y", alpha=0.3)
         ax2.text(
-            0.2,
-            0.8,
-            "Tube Asymmetry\n(Octave Added)",
+            0.4,
+            0.88,
+            "Even-order shift\n(H2 up, H3 down)",
             transform=ax2.transAxes,
             ha="left",
             color=COLORS["dirty"],

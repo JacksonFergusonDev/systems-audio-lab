@@ -24,7 +24,7 @@ The primary interface for capturing organic signal data (Guitar/Synth) from the 
 
 ### `02_instrument_analysis.ipynb`
 
-The scientific analysis workbench used to characterize the **Red Llama Overdrive** using organic signals and validate the "CMOS Tube Sound" hypothesis. It utilizes the custom `src` library to generate publication-ready figures.
+The scientific analysis workbench used to characterize the **Red Llama Overdrive** using organic signals and test the "CMOS Tube Sound" hypothesis. It utilizes the custom `src` library to generate publication-ready figures.
 
 1. **Exploratory Analysis:**
     - **Gain Staging:** Visualizes the massive signal amplification ($72\times$ / $37\text{dB}$, after correcting for the DAQ's 0.5× divider) between the instrument input and the pedal output.
@@ -34,7 +34,7 @@ The scientific analysis workbench used to characterize the **Red Llama Overdrive
     - **Spectral Normalization:** Compares the frequency response shapes to visualize the "plateau" of generated harmonic content.
 1. **Harmonic Fingerprinting:**
     - **Histogram Analysis:** Deconstructs the signal into discrete harmonic orders ($2f, 3f, \dots$).
-    - **Symmetry Check:** Proves the "Tube-like" behavior by identifying the dominance of Even-Order harmonics (Asymmetrical Clipping) over Odd-Order harmonics.
+    - **Symmetry Check:** Compares even- and odd-order harmonic energy against the clean input, to measure how much asymmetry (even-order content) the circuit adds.
 1. **Metrics & Reporting:**
     - Calculates **Selective THD** (Total Harmonic Distortion) to put a quantitative metric on the saturation.
     - Exports vector graphics (`.pdf`) to `docs/figures/` for the final design journal.

@@ -1,6 +1,6 @@
 # 12V to 9V Linear Power Supply
 
-**Status:** Built & Validated
+**Status:** Built & in service (output ripple not measured)
 
 **Role:** Clean Power Source for the Red Llama Build
 
@@ -17,7 +17,7 @@ Rather than buying a dedicated pedal supply, I decided to build a **Linear Volta
 
 ## 2. Theory of Operation
 
-The circuit is built around the **L7809CV**, a classic series linear regulator. Unlike switching regulators which pulse current to maintain voltage (creating noise), a linear regulator acts as a variable resistor effectively "burning off" the excess voltage as heat. This results in a practically ripple-free DC output perfect for audio.
+The circuit is built around the **L7809CV**, a classic series linear regulator. Unlike switching regulators which pulse current to maintain voltage (creating noise), a linear regulator acts as a variable resistor effectively "burning off" the excess voltage as heat. The design intent is a DC output with the switching ripple of the 12V brick largely removed. The output ripple has not been measured: the L7809's ripple rejection falls with frequency, and typical SMPS switching frequencies lie above the DAQ's 48.8kHz Nyquist limit.
 
 ### Thermal Management Strategy
 
